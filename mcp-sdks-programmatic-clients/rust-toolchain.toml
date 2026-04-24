@@ -1,0 +1,3 @@
+# pctx_code_mode and its transitive deps require >= 1.89.
+[toolchain]
+channel = "1.92"

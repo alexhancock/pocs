@@ -1,0 +1,26 @@
+[package]
+name = "mcp-client-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Shared Rust core for MCP SDK augmentations: progressive discovery and programmatic tool calling"
+
+[features]
+default = []
+# Enable code mode (programmatic tool calling). Pulls in Deno + pctx_code_mode.
+# Left optional so the baseline augmentation (progressive discovery only) is
+# lightweight.
+code-mode = ["dep:pctx_code_mode"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+parking_lot = { workspace = true }
+bm25 = { workspace = true }
+pctx_code_mode = { workspace = true, optional = true }

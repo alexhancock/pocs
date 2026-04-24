@@ -1,0 +1,22 @@
+[package]
+name = "mcp-client-node"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Node.js (NAPI-RS) bindings for mcp-client-core"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+mcp-client-core = { path = "../mcp-client-core" }
+napi = { workspace = true }
+napi-derive = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+[build-dependencies]
+napi-build = { workspace = true }

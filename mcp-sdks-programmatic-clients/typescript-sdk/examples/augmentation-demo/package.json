@@ -1,0 +1,23 @@
+{
+    "name": "@modelcontextprotocol/examples-augmentation-demo",
+    "private": true,
+    "version": "2.0.0-alpha.0",
+    "type": "module",
+    "description": "Demo of @modelcontextprotocol/client-augmentation wrapping the official Client",
+    "scripts": {
+        "build": "tsc",
+        "typecheck": "tsc --noEmit",
+        "demo": "tsx src/demo.ts"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/client": "workspace:^",
+        "@modelcontextprotocol/server": "workspace:^",
+        "@modelcontextprotocol/client-augmentation-native": "link:../../../crates/mcp-client-node",
+        "zod": "catalog:runtimeShared"
+    },
+    "devDependencies": {
+        "@types/node": "^24.10.1",
+        "tsx": "catalog:devTools",
+        "typescript": "catalog:devTools"
+    }
+}
