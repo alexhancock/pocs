@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start:server": "node dist/mcp-server.js",
     "start:web": "node dist/web-server.js",
-    "dev:server": "tsx src/mcp-server.ts",
-    "dev:web": "tsx src/web-server.ts"
+    "start:mcp": "node dist/mcp-server.js",
+    "start:frontend": "node dist/frontend-server.js",
+    "start:all": "concurrently -k -n web,mcp,fe -c blue,green,magenta 'npm:start:web' 'npm:start:mcp' 'npm:start:frontend'",
+    "dev:web": "tsx src/web-server.ts",
+    "dev:mcp": "tsx src/mcp-server.ts",
+    "dev:frontend": "tsx src/frontend-server.ts",
+    "dev:all": "concurrently -k -n web,mcp,fe -c blue,green,magenta 'npm:dev:web' 'npm:dev:mcp' 'npm:dev:frontend'"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
@@ -17,6 +21,7 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^20.10.0",
+    "concurrently": "^9.0.0",
     "tsx": "^4.6.2",
     "typescript": "^5.3.2"
   }

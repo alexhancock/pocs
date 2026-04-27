@@ -1,0 +1,28 @@
+# Goose extension config for the x402-aware MCP server.
+#
+# Install: paste the `x402_mcp:` block under `extensions:` in
+#          ~/.config/goose/config.yaml, then restart goose.
+#
+# Prereq:  the MCP server must be running locally on :4000.
+#          From this repo:  npm install && npm run dev:all
+#
+# After installing, ask goose to "fetch http://localhost:3000/article/premium
+# using the x402_mcp.web_scrape tool". Goose will load the baw-payments skill
+# automatically (its description triggers on x402/payment keywords).
+
+extensions:
+  x402_mcp:
+    enabled: true
+    type: streamable_http
+    name: x402_mcp
+    description: |
+      Fetch URLs that may require x402 payment. The web_scrape tool decodes
+      HTTP 402 responses, surfaces the server's accepts[] payment requirements,
+      and cross-references them against client_capabilities to mark which
+      options are actually payable. To complete a paid fetch, retry with a
+      payment_proof obtained from a wallet (see the baw-payments skill).
+    uri: http://localhost:4000/mcp
+    timeout: 60
+    headers: {}
+    env_keys: []
+    available_tools: []

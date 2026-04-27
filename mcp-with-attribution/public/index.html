@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCP Attribution Demo</title>
+  <title>x402 + MCP Demo</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
-    
+    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap');
+
     :root {
       --navy: #1e3a5f;
       --navy-dark: #152a45;
@@ -15,714 +15,477 @@
       --forest-dark: #1e3329;
       --cranberry: #8b3a3a;
       --cranberry-dark: #6b2a2a;
+      --gold: #b8862c;
       --cream: #f5f2eb;
       --cream-dark: #e8e4d9;
       --ink: #2c2c2c;
       --ink-light: #5a5a5a;
     }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+      font-family: 'Crimson Pro', Georgia, serif;
       background: var(--cream);
       min-height: 100vh;
       color: var(--ink);
       padding: 40px 20px;
       line-height: 1.6;
     }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
+
+    .container { max-width: 1280px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--cream-dark); }
+    header h1 { font-family: 'Source Serif 4', serif; font-size: 2.4rem; font-weight: 600; color: var(--navy); }
+    header .subtitle { color: var(--ink-light); font-size: 1.05rem; margin-top: 6px; }
+    header .badge-row { margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    header .badge-row span {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+      padding: 4px 10px; background: #fff; border: 1px solid var(--cream-dark); color: var(--ink-light);
+      letter-spacing: 0.04em;
     }
-    
-    header {
-      text-align: center;
-      margin-bottom: 50px;
-      padding-bottom: 30px;
-      border-bottom: 1px solid var(--cream-dark);
-    }
-    
-    h1 {
-      font-family: 'Source Serif 4', Georgia, serif;
-      font-size: 2.2rem;
-      font-weight: 600;
-      color: var(--navy);
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
-    }
-    
-    .subtitle {
-      color: var(--ink-light);
-      font-size: 1.1rem;
-      font-style: italic;
-    }
-    
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 30px;
-      margin-bottom: 30px;
-    }
-    
-    @media (max-width: 1000px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    
+
+    .grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
+
     .panel {
       background: #fff;
-      padding: 28px;
       border: 1px solid var(--cream-dark);
       box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      padding: 22px;
     }
-    
     .panel h2 {
-      font-family: 'Source Serif 4', Georgia, serif;
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 20px;
+      font-family: 'Source Serif 4', serif;
+      font-size: 0.78rem; font-weight: 600;
       color: var(--navy);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      text-transform: uppercase; letter-spacing: 0.12em;
       border-bottom: 2px solid var(--navy);
-      padding-bottom: 10px;
+      padding-bottom: 8px; margin-bottom: 16px;
     }
-    
-    .panel h2 .icon {
-      display: none;
-    }
-    
-    .capabilities {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-    
+
     .capability {
-      background: var(--cream);
-      border: 1px solid var(--cream-dark);
-      padding: 20px 16px;
-      text-align: center;
-      border-top: 3px solid var(--navy);
+      background: var(--cream); border-left: 3px solid var(--navy);
+      padding: 10px 12px; margin-bottom: 8px;
     }
-    
-    .capability.payment-usd {
-      border-top-color: var(--forest);
-    }
-    
-    .capability.payment-crypto {
-      border-top-color: var(--cranberry);
-    }
-    
-    .capability .icon {
-      display: none;
-    }
-    
-    .capability .label {
-      font-family: 'Source Serif 4', Georgia, serif;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: var(--ink);
-    }
-    
-    .capability .details {
-      font-size: 0.85rem;
-      color: var(--ink-light);
-    }
-    
-    .articles-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    
+    .capability.evm { border-left-color: var(--navy); }
+    .capability.btc { border-left-color: var(--gold); }
+    .capability .label { font-weight: 600; font-size: 0.95rem; color: var(--ink); }
+    .capability .details { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--ink-light); margin-top: 2px; }
+
     .article-btn {
-      background: var(--cream);
-      border: 1px solid var(--cream-dark);
-      padding: 16px 18px;
-      cursor: pointer;
+      background: var(--cream); border: 1px solid var(--cream-dark);
+      padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
       transition: all 0.15s ease;
-      text-align: left;
-      color: var(--ink);
-      border-left: 3px solid transparent;
     }
-    
-    .article-btn:hover {
-      background: #fff;
-      border-left-color: var(--navy-light);
-    }
-    
-    .article-btn.active {
-      background: #fff;
-      border-left-color: var(--navy);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    }
-    
-    .article-btn .title {
-      font-family: 'Source Serif 4', Georgia, serif;
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--ink);
-    }
-    
-    .article-btn .badges {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    
+    .article-btn:hover { background: #fff; border-color: var(--navy); }
+    .article-btn.active { background: #fff; border-color: var(--navy); box-shadow: 0 0 0 1px var(--navy); }
+    .article-btn .title { font-weight: 600; font-size: 0.95rem; color: var(--ink); margin-bottom: 4px; }
+    .article-btn .badges { display: flex; gap: 4px; flex-wrap: wrap; }
     .badge {
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      background: var(--cream-dark);
-      color: var(--ink-light);
-      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+      padding: 2px 8px; letter-spacing: 0.04em;
+      background: #fff; border: 1px solid var(--cream-dark); color: var(--ink-light);
     }
-    
-    .badge.attribution { 
-      background: rgba(30, 58, 95, 0.1);
-      color: var(--navy);
-    }
-    .badge.payment-usd { 
-      background: rgba(45, 74, 62, 0.1);
-      color: var(--forest);
-    }
-    .badge.payment-crypto { 
-      background: rgba(139, 58, 58, 0.1);
-      color: var(--cranberry);
-    }
-    
+    .badge.x402 { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .badge.free { background: var(--forest); color: #fff; border-color: var(--forest); }
+
     .scrape-btn {
-      width: 100%;
-      padding: 14px 20px;
-      font-family: 'Crimson Pro', Georgia, serif;
-      font-size: 1.05rem;
-      font-weight: 500;
-      background: var(--navy);
-      border: none;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.15s ease;
-      margin-top: 20px;
-      letter-spacing: 0.02em;
+      width: 100%; padding: 12px;
+      background: var(--navy); color: #fff; border: none;
+      font-family: 'Source Serif 4', serif; font-size: 0.9rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; margin-top: 12px;
     }
-    
-    .scrape-btn:hover {
-      background: var(--navy-dark);
-    }
-    
-    .scrape-btn:disabled {
-      background: var(--cream-dark);
-      color: var(--ink-light);
-      cursor: not-allowed;
-    }
-    
-    .output-panel {
-      grid-column: 1 / -1;
-    }
-    
-    .output-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-    
-    @media (max-width: 1000px) {
-      .output-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    
-    .output-section {
-      background: var(--cream);
-      border: 1px solid var(--cream-dark);
-      padding: 18px;
-    }
-    
+    .scrape-btn:hover:not(:disabled) { background: var(--navy-dark); }
+    .scrape-btn:disabled { background: var(--ink-light); cursor: not-allowed; opacity: 0.5; }
+
+    .output-panel { display: flex; flex-direction: column; gap: 18px; }
     .output-section h3 {
-      font-family: 'Source Serif 4', Georgia, serif;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--ink-light);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-family: 'Source Serif 4', serif; font-size: 0.72rem; font-weight: 600;
+      color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 8px;
     }
-    
-    .output-content {
-      font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', monospace;
-      font-size: 0.8rem;
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: 280px;
-      overflow-y: auto;
+
+    .step-list { display: flex; flex-direction: column; gap: 8px; }
+    .step {
+      background: var(--cream); border-left: 3px solid var(--cream-dark);
+      padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
       color: var(--ink);
-      line-height: 1.5;
     }
-    
-    .output-content em {
-      color: var(--ink-light);
-      font-style: italic;
+    .step.pending { border-left-color: var(--ink-light); }
+    .step.active { border-left-color: var(--navy); background: #fff; box-shadow: 0 0 0 1px var(--navy); }
+    .step.done { border-left-color: var(--forest); }
+    .step.error { border-left-color: var(--cranberry); }
+    .step.warning { border-left-color: var(--gold); }
+    .step .step-num {
+      display: inline-block; width: 18px; text-align: right; margin-right: 8px;
+      color: var(--ink-light); font-weight: 600;
     }
-    
-    .log-entry {
-      padding: 10px 14px;
-      margin-bottom: 6px;
-      background: #fff;
-      border: 1px solid var(--cream-dark);
-      border-left: 3px solid var(--cream-dark);
+
+    .accepts-list { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+    .accept-card {
+      background: #fff; border: 1px solid var(--cream-dark); padding: 10px 12px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
     }
-    
-    .log-entry.attribution {
-      border-left-color: var(--navy);
+    .accept-card.payable { border-left: 3px solid var(--forest); }
+    .accept-card.unpayable { border-left: 3px solid var(--cranberry); opacity: 0.7; }
+    .accept-card .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .accept-card .payable-tag {
+      font-size: 0.65rem; padding: 2px 8px; letter-spacing: 0.04em;
     }
-    
-    .log-entry.payment-usd {
-      border-left-color: var(--forest);
+    .accept-card .payable-tag.yes { background: var(--forest); color: #fff; }
+    .accept-card .payable-tag.no { background: var(--cranberry); color: #fff; }
+    .accept-card .row { color: var(--ink-light); font-size: 0.7rem; }
+    .accept-card .row b { color: var(--ink); font-weight: 500; }
+    .accept-card.recommended { box-shadow: 0 0 0 2px var(--gold); position: relative; }
+    .accept-card.recommended::before {
+      content: "★ recommended"; position: absolute; top: -10px; right: 10px;
+      background: var(--gold); color: #fff; font-size: 0.6rem;
+      padding: 2px 8px; letter-spacing: 0.06em;
     }
-    
-    .log-entry.payment-crypto {
-      border-left-color: var(--cranberry);
+
+    .raw-output {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+      background: #1e1e1e; color: #d4d4d4;
+      padding: 14px; max-height: 240px; overflow: auto;
+      white-space: pre-wrap; word-break: break-all;
     }
-    
-    .log-entry.success {
-      border-left-color: var(--forest);
-      background: rgba(45, 74, 62, 0.05);
+
+    .content-preview {
+      background: var(--cream); padding: 16px; border: 1px solid var(--cream-dark);
+      font-family: 'Source Serif 4', serif;
     }
-    
-    .log-entry.info {
-      border-left-color: var(--navy-light);
-    }
-    
-    .log-entry .timestamp {
-      color: var(--ink-light);
-      font-size: 0.7rem;
-      margin-right: 8px;
-    }
-    
-    .architecture {
-      margin-top: 30px;
-      padding: 30px;
-      background: #fff;
-      border: 1px solid var(--cream-dark);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    
-    .architecture h3 {
-      font-family: 'Source Serif 4', Georgia, serif;
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 24px;
-      color: var(--navy);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      text-align: center;
-      border-bottom: 2px solid var(--navy);
-      padding-bottom: 10px;
-      max-width: 280px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    
-    .arch-diagram {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-    
-    .arch-box {
-      background: var(--cream);
-      border: 1px solid var(--cream-dark);
-      border-top: 3px solid var(--navy);
-      padding: 24px 28px;
-      text-align: center;
-      min-width: 160px;
-    }
-    
+    .content-preview h1 { font-size: 1.2rem; color: var(--navy); margin-bottom: 6px; }
+    .content-preview p { font-size: 0.95rem; }
+
+    .architecture { margin-top: 28px; padding: 24px; background: #fff; border: 1px solid var(--cream-dark); }
+    .architecture h3 { font-family: 'Source Serif 4', serif; font-size: 0.72rem; font-weight: 600; color: var(--navy); text-transform: uppercase; letter-spacing: 0.12em; text-align: center; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 2px solid var(--navy); max-width: 240px; margin-left: auto; margin-right: auto; }
+    .arch-diagram { display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace; }
+    .arch-box { background: var(--cream); border: 1px solid var(--cream-dark); border-top: 3px solid var(--navy); padding: 16px 20px; text-align: center; min-width: 150px; }
     .arch-box.client { border-top-color: var(--navy); }
     .arch-box.server { border-top-color: var(--forest); }
     .arch-box.web { border-top-color: var(--cranberry); }
-    
-    .arch-box .arch-icon {
-      display: none;
-    }
-    
-    .arch-box strong {
-      font-family: 'Source Serif 4', Georgia, serif;
-      font-size: 1rem;
-      color: var(--ink);
-      display: block;
-      margin-bottom: 4px;
-    }
-    
-    .arch-box .arch-desc {
-      font-size: 0.85rem;
-      color: var(--ink-light);
-    }
-    
-    .arch-arrow {
-      font-size: 1.5rem;
-      color: var(--ink-light);
-    }
-    
-    .status-indicator {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 8px;
-    }
-    
-    .status-indicator.online { background: var(--forest); }
-    .status-indicator.offline { background: var(--cranberry); }
-    .status-indicator.pending { background: var(--navy); }
+    .arch-box strong { font-family: 'Source Serif 4', serif; font-size: 0.88rem; color: var(--ink); display: block; margin-bottom: 3px; }
+    .arch-box .arch-desc { font-size: 0.7rem; color: var(--ink-light); }
+    .arch-arrow { color: var(--ink-light); font-size: 1.2rem; }
+
+    em { color: var(--ink-light); }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>MCP Attribution Demo</h1>
-      <p class="subtitle">Content attribution and payment capabilities in the Model Context Protocol</p>
+      <h1>x402 + MCP Demo</h1>
+      <p class="subtitle">HTTP-native payments · MCP tool surfaces requirements · client cross-references its capabilities</p>
+      <div class="badge-row">
+        <span>x402 v2</span>
+        <span>MCP streamable-http</span>
+        <span>402 → pay → retry</span>
+      </div>
     </header>
-    
+
     <div class="grid">
-      <!-- Client Capabilities Panel -->
-      <div class="panel">
-        <h2>Client Capabilities</h2>
-        <div class="capabilities">
-          <div class="capability">
-            <div class="label">Attribution</div>
-            <div class="details">Text, HTML, Markdown, JSON-LD</div>
+      <!-- LEFT COLUMN: capabilities + article picker -->
+      <div>
+        <div class="panel">
+          <h2>Client Wallet Capabilities</h2>
+          <p style="font-size: 0.85rem; color: var(--ink-light); margin-bottom: 12px;">
+            What this browser session can pay with. (In the agent demo, these come from <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">baw</code>.)
+          </p>
+          <div class="capability evm">
+            <div class="label">EVM (Base Sepolia)</div>
+            <div class="details">eip155:84532 · USDC · 0x036C…CF7e</div>
           </div>
-          <div class="capability payment-usd">
-            <div class="label">USD Payments</div>
-            <div class="details">Max $10 · Stripe, PayPal</div>
-          </div>
-          <div class="capability payment-crypto">
-            <div class="label">Crypto Payments</div>
-            <div class="details">ETH, BTC, SOL · Max $5</div>
+          <div class="capability btc">
+            <div class="label">Bitcoin mainnet</div>
+            <div class="details">bip122:0000…1e93 · BTC</div>
           </div>
         </div>
-      </div>
-      
-      <!-- Article Selection Panel -->
-      <div class="panel">
-        <h2>Select Content</h2>
-        <div class="articles-list" id="articlesList">
+
+        <div class="panel" style="margin-top: 18px;">
+          <h2>Resources</h2>
           <div class="article-btn" data-path="/article/free">
             <div class="title">Free Article</div>
-            <div class="badges">
-              <span class="badge attribution">Attribution</span>
-            </div>
+            <div class="badges"><span class="badge free">no payment</span><span class="badge">attribution</span></div>
           </div>
           <div class="article-btn" data-path="/article/premium">
             <div class="title">Premium Article</div>
-            <div class="badges">
-              <span class="badge attribution">Attribution</span>
-              <span class="badge payment-usd">$0.50 USD</span>
-            </div>
+            <div class="badges"><span class="badge x402">x402</span><span class="badge">$0.01 USDC</span></div>
           </div>
           <div class="article-btn" data-path="/article/crypto">
-            <div class="title">Crypto-Gated Article</div>
-            <div class="badges">
-              <span class="badge attribution">Attribution</span>
-              <span class="badge payment-crypto">0.001 ETH</span>
-            </div>
+            <div class="title">Crypto-Gated</div>
+            <div class="badges"><span class="badge x402">x402</span><span class="badge">1000 sats BTC</span></div>
           </div>
           <div class="article-btn" data-path="/article/multi">
-            <div class="title">Multi-Requirement Article</div>
-            <div class="badges">
-              <span class="badge attribution">Attribution</span>
-              <span class="badge payment-usd">$2.00 USD</span>
-              <span class="badge payment-crypto">0.005 ETH</span>
-            </div>
+            <div class="title">Multi-Option</div>
+            <div class="badges"><span class="badge x402">x402</span><span class="badge">USDC or BTC</span></div>
           </div>
           <div class="article-btn" data-path="/article/public">
-            <div class="title">Public Domain Content</div>
-            <div class="badges">
-              <span class="badge">No Requirements</span>
-            </div>
+            <div class="title">Public Domain</div>
+            <div class="badges"><span class="badge free">no payment</span></div>
           </div>
+          <button class="scrape-btn" id="scrapeBtn" disabled>Select a resource</button>
         </div>
-        <button class="scrape-btn" id="scrapeBtn" disabled>Select an article to scrape</button>
       </div>
-      
-      <!-- Output Panel -->
+
+      <!-- RIGHT COLUMN: output -->
       <div class="panel output-panel">
-        <h2>Output</h2>
-        <div class="output-grid">
-          <div class="output-section">
-            <h3>HTTP Headers Received</h3>
-            <div class="output-content" id="headersOutput">
-              <em>Headers will appear here...</em>
-            </div>
-          </div>
-          <div class="output-section">
-            <h3>Content Preview</h3>
-            <div class="output-content" id="contentOutput">
-              <em>Content will appear here...</em>
-            </div>
+        <h2>Flow</h2>
+
+        <div class="output-section">
+          <h3>Steps</h3>
+          <div class="step-list" id="stepList">
+            <div class="step pending"><em>Pick a resource and click Fetch.</em></div>
           </div>
         </div>
-        <div class="output-section" style="margin-top: 20px;">
-          <h3>Processing Log</h3>
-          <div class="output-content" id="processingLog">
-            <em>Processing log will appear here...</em>
-          </div>
+
+        <div class="output-section" id="acceptsSection" style="display:none;">
+          <h3>Payment Options &amp; Cross-Reference</h3>
+          <div class="accepts-list" id="acceptsList"></div>
+        </div>
+
+        <div class="output-section" id="contentSection" style="display:none;">
+          <h3>Content</h3>
+          <div class="content-preview" id="contentPreview"></div>
+        </div>
+
+        <div class="output-section" id="rawSection" style="display:none;">
+          <h3>Raw MCP Tool Result</h3>
+          <pre class="raw-output" id="rawOutput"></pre>
         </div>
       </div>
     </div>
-    
-    <!-- Architecture Diagram -->
+
     <div class="architecture">
       <h3>System Architecture</h3>
       <div class="arch-diagram">
         <div class="arch-box client">
-          <strong>MCP Client</strong>
-          <div class="arch-desc">Expresses capabilities</div>
+          <strong>Client</strong>
+          <div class="arch-desc">browser or goose+baw<br>declares capabilities</div>
         </div>
         <div class="arch-arrow">⟷</div>
         <div class="arch-box server">
           <strong>MCP Server</strong>
-          <div class="arch-desc">web_scrape tool</div>
+          <div class="arch-desc">web_scrape<br>cross-references<br>capabilities × accepts[]</div>
         </div>
         <div class="arch-arrow">⟷</div>
         <div class="arch-box web">
-          <strong>Web Server</strong>
-          <div class="arch-desc">X-Content-* headers</div>
+          <strong>x402 Web Server</strong>
+          <div class="arch-desc">402 + Payment-Required<br>then 200 on X-PAYMENT</div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    let selectedPath = null;
-    const MCP_URL = window.location.hostname === 'localhost' 
-      ? 'http://localhost:4000/mcp' 
-      : 'http://mcp-server:4000/mcp';
-    // MCP server runs in Docker, so it always needs the Docker network hostname
-    const WEB_SERVER_URL = 'http://web-server:3000';
+    // ---- config -----------------------------------------------------------
+    const MCP_URL = 'http://localhost:4000/mcp';
+    const WEB_SERVER_URL = 'http://localhost:3000';
 
+    // What this browser pretends to have. In the agent demo this comes from `baw`.
     const CLIENT_CAPABILITIES = {
-      attribution: { canProvideAttribution: true, supportedFormats: ["text", "html", "markdown", "json-ld"] },
-      payments: {
-        usd: { enabled: true, maxAmount: 10.0, methods: ["stripe", "paypal"] },
-        crypto: { enabled: true, supportedChains: ["ethereum", "bitcoin", "solana"], maxAmountUSD: 5.0 },
-      },
+      networks: ['eip155:84532', 'bip122:000000000019d6689c085ae165831e93'],
+      assets: [
+        '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC Base Sepolia
+        'BTC',
+      ],
+      schemes: ['exact'],
+      maxAmountUSD: 1.0,
     };
 
+    // ---- DOM helpers ------------------------------------------------------
+    const stepList = document.getElementById('stepList');
+    const acceptsSection = document.getElementById('acceptsSection');
+    const acceptsList = document.getElementById('acceptsList');
+    const contentSection = document.getElementById('contentSection');
+    const contentPreview = document.getElementById('contentPreview');
+    const rawSection = document.getElementById('rawSection');
+    const rawOutput = document.getElementById('rawOutput');
+    const scrapeBtn = document.getElementById('scrapeBtn');
+
+    let stepCounter = 0;
+    function clearOutput() {
+      stepList.innerHTML = '';
+      acceptsSection.style.display = 'none';
+      acceptsList.innerHTML = '';
+      contentSection.style.display = 'none';
+      contentPreview.innerHTML = '';
+      rawSection.style.display = 'none';
+      rawOutput.textContent = '';
+      stepCounter = 0;
+    }
+    function addStep(text, level = 'active') {
+      stepCounter += 1;
+      const div = document.createElement('div');
+      div.className = `step ${level}`;
+      div.innerHTML = `<span class="step-num">${stepCounter}</span>${text}`;
+      stepList.appendChild(div);
+      return div;
+    }
+    function setStep(div, text, level) {
+      div.className = `step ${level}`;
+      const num = div.querySelector('.step-num');
+      div.innerHTML = '';
+      if (num) div.appendChild(num);
+      const span = document.createElement('span');
+      span.innerHTML = text;
+      div.appendChild(span);
+    }
+    function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    function renderAccepts(accepts, recommendedIndex) {
+      acceptsSection.style.display = 'block';
+      acceptsList.innerHTML = '';
+      accepts.forEach((a, i) => {
+        const card = document.createElement('div');
+        card.className = `accept-card ${a.payable ? 'payable' : 'unpayable'}${i === recommendedIndex ? ' recommended' : ''}`;
+        const tag = a.payable
+          ? '<span class="payable-tag yes">payable</span>'
+          : '<span class="payable-tag no">not payable</span>';
+        card.innerHTML = `
+          <div class="header-row"><b>option ${i}</b>${tag}</div>
+          <div class="row"><b>scheme:</b> ${escapeHtml(a.scheme)} &nbsp; <b>network:</b> ${escapeHtml(a.network)}</div>
+          <div class="row"><b>amount:</b> ${escapeHtml(a.amount)} &nbsp; <b>asset:</b> ${escapeHtml(a.asset)}</div>
+          <div class="row"><b>payTo:</b> ${escapeHtml(a.payTo)}</div>
+          <div class="row" style="margin-top:4px; color:${a.payable ? 'var(--forest)' : 'var(--cranberry)'};">→ ${escapeHtml(a.payableReason)}</div>
+        `;
+        acceptsList.appendChild(card);
+      });
+    }
+
+    // ---- MCP transport ----------------------------------------------------
     let sessionId = null;
     let requestId = 0;
-
-    const articleBtns = document.querySelectorAll('.article-btn');
-    const scrapeBtn = document.getElementById('scrapeBtn');
-    const headersOutput = document.getElementById('headersOutput');
-    const contentOutput = document.getElementById('contentOutput');
-    const processingLog = document.getElementById('processingLog');
-
-    articleBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        articleBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedPath = btn.dataset.path;
-        scrapeBtn.disabled = false;
-        scrapeBtn.textContent = `Scrape: ${btn.querySelector('.title').textContent}`;
-      });
-    });
-
-    function timestamp() {
-      return new Date().toLocaleTimeString();
-    }
-
-    function addLog(message, type = 'info') {
-      const entry = document.createElement('div');
-      entry.className = `log-entry ${type}`;
-      entry.innerHTML = `<span class="timestamp">[${timestamp()}]</span> ${message}`;
-      processingLog.appendChild(entry);
-      processingLog.scrollTop = processingLog.scrollHeight;
-    }
-
-    function clearOutputs() {
-      headersOutput.innerHTML = '';
-      contentOutput.innerHTML = '';
-      processingLog.innerHTML = '';
-    }
 
     async function mcpRequest(method, params = {}) {
       const id = ++requestId;
       const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
       if (sessionId) headers['mcp-session-id'] = sessionId;
-
-      const response = await fetch(MCP_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
-      });
-
-      const newSessionId = response.headers.get('mcp-session-id');
-      if (newSessionId) sessionId = newSessionId;
-
-      const contentType = response.headers.get('content-type') || '';
-      
-      if (contentType.includes('text/event-stream')) {
+      const response = await fetch(MCP_URL, { method: 'POST', headers, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) });
+      const newSid = response.headers.get('mcp-session-id');
+      if (newSid) sessionId = newSid;
+      const ct = response.headers.get('content-type') || '';
+      if (ct.includes('text/event-stream')) {
         const text = await response.text();
-        const lines = text.split('\n');
-        for (const line of lines) {
+        for (const line of text.split('\n')) {
           if (line.startsWith('data:')) {
-            const data = JSON.parse(line.slice(5).trim());
-            if (data.id === id) return data;
+            const d = JSON.parse(line.slice(5).trim());
+            if (d.id === id) return d;
           }
         }
         throw new Error('No response in SSE stream');
-      } else {
-        return await response.json();
       }
+      return await response.json();
     }
 
     async function initializeMcp() {
-      addLog('MCP: Sending initialize request...', 'info');
-      const initResult = await mcpRequest('initialize', {
+      await mcpRequest('initialize', {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'browser-client', version: '1.0.0' },
+        clientInfo: { name: 'browser-x402-demo', version: '2.0.0' },
       });
-      addLog(`MCP: Initialized. Session: ${sessionId?.slice(0,8)}...`, 'info');
-
-      addLog('MCP: Sending initialized notification...', 'info');
       await fetch(MCP_URL, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Accept': 'application/json, text/event-stream',
-          'mcp-session-id': sessionId 
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream', 'mcp-session-id': sessionId },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
       });
-
-      return initResult;
     }
 
     async function callTool(name, args) {
-      addLog(`MCP: Calling tool "${name}"...`, 'info');
-      const result = await mcpRequest('tools/call', { name, arguments: args });
-      if (result.error) throw new Error(result.error.message);
-      return result.result;
+      const r = await mcpRequest('tools/call', { name, arguments: args });
+      if (r.error) throw new Error(r.error.message);
+      const text = r.result.content.find(c => c.type === 'text');
+      if (!text) throw new Error('No text content in response');
+      return JSON.parse(text.text);
     }
 
-    function processRequirements(requirements) {
-      if (requirements.length === 0) {
-        addLog('No attribution requirements for this content.', 'success');
-        return;
-      }
+    // ---- demo flow --------------------------------------------------------
+    async function performScrape(path) {
+      clearOutput();
+      const url = `${WEB_SERVER_URL}${path}`;
 
-      addLog(`Found ${requirements.length} requirement(s) to process...`, 'info');
-
-      for (const req of requirements) {
-        switch (req.type) {
-          case 'attribution':
-            const attr = req.details.attribution;
-            addLog(`<strong>Attribution Required</strong>`, 'attribution');
-            addLog(`&nbsp;&nbsp;Author: ${attr.author}`, 'attribution');
-            addLog(`&nbsp;&nbsp;Source: ${attr.source}`, 'attribution');
-            addLog(`&nbsp;&nbsp;License: ${attr.license}`, 'attribution');
-            
-            if (CLIENT_CAPABILITIES.attribution.canProvideAttribution) {
-              addLog(`Attribution provided: "Content by ${attr.author}, ${attr.license}"`, 'success');
-            }
-            break;
-
-          case 'payment-usd':
-            const usd = req.details.payment;
-            addLog(`<strong>USD Payment Required</strong>`, 'payment-usd');
-            addLog(`&nbsp;&nbsp;Amount: $${usd.amount.toFixed(2)} ${usd.currency}`, 'payment-usd');
-            addLog(`&nbsp;&nbsp;Method: ${usd.paymentMethod || 'stripe'}`, 'payment-usd');
-            
-            if (CLIENT_CAPABILITIES.payments.usd.enabled && usd.amount <= CLIENT_CAPABILITIES.payments.usd.maxAmount) {
-              const txnId = 'txn_' + Math.random().toString(36).substring(7);
-              addLog(`Processing payment via ${usd.paymentMethod || 'stripe'}...`, 'payment-usd');
-              addLog(`Payment complete. Transaction ID: ${txnId}`, 'success');
-            }
-            break;
-
-          case 'payment-crypto':
-            const crypto = req.details.payment;
-            addLog(`<strong>Crypto Payment Required</strong>`, 'payment-crypto');
-            addLog(`&nbsp;&nbsp;Amount: ${crypto.amount} ${crypto.currency}`, 'payment-crypto');
-            addLog(`&nbsp;&nbsp;Wallet: ${crypto.walletAddress}`, 'payment-crypto');
-            
-            if (CLIENT_CAPABILITIES.payments.crypto.enabled) {
-              const txHash = '0x' + Math.random().toString(16).substring(2, 18);
-              addLog(`Sending ${crypto.amount} ${crypto.currency} to wallet...`, 'payment-crypto');
-              addLog(`Transaction confirmed. Hash: ${txHash}`, 'success');
-            }
-            break;
-        }
-      }
-    }
-
-    async function performScrape() {
-      if (!selectedPath) return;
-      
-      clearOutputs();
-      scrapeBtn.disabled = true;
-      scrapeBtn.textContent = 'Scraping...';
-      
-      const fullUrl = `${WEB_SERVER_URL}${selectedPath}`;
-
+      const s1 = addStep(`MCP <code>web_scrape</code> → <b>${escapeHtml(url)}</b><br><span style="color:var(--ink-light);">passing client_capabilities: ${escapeHtml(CLIENT_CAPABILITIES.networks.join(', '))}</span>`, 'active');
       try {
         if (!sessionId) {
           await initializeMcp();
         }
+        const result = await callTool('web_scrape', { url, client_capabilities: CLIENT_CAPABILITIES });
+        rawSection.style.display = 'block';
+        rawOutput.textContent = JSON.stringify(result, null, 2);
 
-        addLog(`MCP: web_scrape("${fullUrl}")`, 'info');
-        const result = await callTool('web_scrape', { url: fullUrl });
+        if (result.status === 'error') {
+          setStep(s1, `MCP request failed: ${escapeHtml(result.message)}`, 'error');
+          return;
+        }
 
-        const textContent = result.content.find(c => c.type === 'text');
-        if (!textContent) throw new Error('No text content in response');
+        if (result.status === 'success') {
+          setStep(s1, `Direct 200 OK — no payment required.`, 'done');
+          renderContent(result);
+          return;
+        }
 
-        const scrapeResult = JSON.parse(textContent.text);
+        // status === 'payment_required'
+        setStep(s1, `Web server returned <b>402 Payment Required</b>. ${result.totalCount} option(s), ${result.payableCount} payable.`, 'warning');
 
-        if (scrapeResult.error) throw new Error(scrapeResult.message);
+        const s2 = addStep('Cross-referencing client capabilities × server <code>accepts[]</code>...', 'active');
+        renderAccepts(result.accepts, result.recommendedIndex);
+        if (result.payableCount === 0) {
+          setStep(s2, `No payable options. ${escapeHtml(result.next.description)}`, 'error');
+          return;
+        }
+        const rec = result.accepts[result.recommendedIndex];
+        setStep(s2, `Recommended option <b>${result.recommendedIndex}</b>: ${escapeHtml(rec.amount)} on <b>${escapeHtml(rec.network)}</b> to <code>${escapeHtml(rec.payTo)}</code>.`, 'done');
 
-        addLog(`MCP: Response received`, 'info');
+        const s3 = addStep(`Simulating wallet payment (in the agent demo this is <code>baw pay</code>)...`, 'active');
+        await new Promise(r => setTimeout(r, 700));
+        const fakeProof = `demo-proof-${Math.random().toString(36).slice(2, 12)}`;
+        setStep(s3, `Wallet returned X-PAYMENT proof <code>${escapeHtml(fakeProof)}</code>.`, 'done');
 
-        headersOutput.innerHTML = Object.entries(scrapeResult.rawHeaders || {})
-          .map(([k, v]) => `<div><strong>${k}:</strong>\n${v}</div>`)
-          .join('\n') || '<em>No attribution headers</em>';
-
-        contentOutput.textContent = scrapeResult.content;
-
-        addLog(`—`, 'info');
-        addLog(`<strong>Processing Attribution Requirements</strong>`, 'info');
-        addLog(`—`, 'info');
-
-        processRequirements(scrapeResult.attributionRequirements || []);
-
-        addLog(`Scrape and attribution processing complete.`, 'success');
-
-      } catch (error) {
-        addLog(`Error: ${error.message}`, 'info');
-        contentOutput.innerHTML = `<em style="color: var(--cranberry);">Error: ${error.message}</em>`;
+        const s4 = addStep(`Retrying <code>web_scrape</code> with <code>payment_proof</code>...`, 'active');
+        const result2 = await callTool('web_scrape', { url, payment_proof: fakeProof });
+        rawOutput.textContent = JSON.stringify(result2, null, 2);
+        if (result2.status === 'success') {
+          setStep(s4, `Server returned <b>200 OK</b> after payment. Content unlocked.`, 'done');
+          renderContent(result2);
+        } else if (result2.status === 'payment_required') {
+          setStep(s4, `Still 402 — payment proof rejected.`, 'error');
+        } else {
+          setStep(s4, `Error on retry: ${escapeHtml(result2.message || 'unknown')}`, 'error');
+        }
+      } catch (e) {
+        setStep(s1, `Error: ${escapeHtml(e.message)}`, 'error');
         sessionId = null;
       }
-
-      scrapeBtn.disabled = false;
-      scrapeBtn.textContent = `Scrape Again`;
     }
 
-    scrapeBtn.addEventListener('click', performScrape);
+    function renderContent(result) {
+      contentSection.style.display = 'block';
+      contentPreview.innerHTML = result.content || '<em>(empty body)</em>';
+      if (result.attribution) {
+        const attr = document.createElement('div');
+        attr.style.cssText = 'margin-top:12px; padding:8px 12px; font-size:0.8rem; background:#fff; border-left:3px solid var(--navy); color:var(--ink-light); font-family:JetBrains Mono, monospace;';
+        attr.innerHTML = `<b>attribution:</b> ${escapeHtml(result.attribution.author)} · ${escapeHtml(result.attribution.license)}`;
+        contentPreview.appendChild(attr);
+      }
+      if (result.paymentResponse) {
+        const pr = document.createElement('div');
+        pr.style.cssText = 'margin-top:8px; padding:8px 12px; font-size:0.8rem; background:#fff; border-left:3px solid var(--forest); color:var(--ink-light); font-family:JetBrains Mono, monospace;';
+        pr.innerHTML = `<b>X-PAYMENT-RESPONSE:</b> ${escapeHtml(JSON.stringify(result.paymentResponse))}`;
+        contentPreview.appendChild(pr);
+      }
+    }
 
-    addLog('Welcome. Select an article and click scrape to begin.', 'info');
-    addLog('This demo uses MCP over Streamable HTTP directly from the browser.', 'info');
+    // ---- wire up UI -------------------------------------------------------
+    let selectedPath = null;
+    document.querySelectorAll('.article-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.article-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedPath = btn.dataset.path;
+        scrapeBtn.disabled = false;
+        scrapeBtn.textContent = `Fetch: ${btn.querySelector('.title').textContent}`;
+      });
+    });
+    scrapeBtn.addEventListener('click', () => { if (selectedPath) performScrape(selectedPath); });
   </script>
 </body>
 </html>
