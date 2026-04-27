@@ -1,371 +1,546 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>x402 + MCP Demo</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>x402 · MCP inspector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap');
-
+    /* ---------- palette --------------------------------------------------
+       Paper and ink lab-notebook. Warm off-white background, deep slate
+       ink, a single oxidized-copper accent, a brick highlight for warnings.
+       Distinct from /states/* (which uses saturated dark backgrounds with
+       gold accents) but in the same EB Garamond / Pexels-photo family. */
     :root {
-      --navy: #1e3a5f;
-      --navy-dark: #152a45;
-      --navy-light: #2d4a6f;
-      --forest: #2d4a3e;
-      --forest-dark: #1e3329;
-      --cranberry: #8b3a3a;
-      --cranberry-dark: #6b2a2a;
-      --gold: #b8862c;
-      --cream: #f5f2eb;
-      --cream-dark: #e8e4d9;
-      --ink: #2c2c2c;
-      --ink-light: #5a5a5a;
+      --paper:     #f3eddf;
+      --paper-2:   #ebe2cf;
+      --paper-3:   #ddd1b6;
+      --rule:      #c5b993;
+      --ink:       #1f1d1a;
+      --ink-2:     #4a463e;
+      --ink-3:     #7c7669;
+      --copper:    #a8623c;
+      --brick:     #7a2a1f;
+      --leaf:      #4f6234;
+      --shadow:    rgba(40, 30, 10, 0.08);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
     body {
-      font-family: 'Crimson Pro', Georgia, serif;
-      background: var(--cream);
+      font-family: 'EB Garamond', Georgia, serif;
+      font-feature-settings: 'kern', 'liga', 'onum';
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    code, .mono, pre { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-feature-settings: 'tnum', 'liga' off; }
+
+    /* ---------- shell ---------------------------------------------------- */
+
+    .shell { max-width: 1480px; margin: 0 auto; padding: 38px 28px 60px; }
+
+    header.title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 22px;
+    }
+    header.title h1 {
+      font-weight: 500;
+      font-size: 2.4rem;
+      letter-spacing: -0.01em;
+      margin: 0;
+      line-height: 1.0;
+    }
+    header.title h1 em { font-style: italic; color: var(--copper); font-weight: 500; }
+    header.title .sub {
+      font-size: 0.78rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      white-space: nowrap;
+    }
+    header.title .sub a { color: var(--ink-2); text-decoration: none; border-bottom: 1px dotted var(--ink-3); }
+
+    /* ---------- 3-region grid ------------------------------------------- */
+
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: #fbf7eb;
+      border: 1px solid var(--rule);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 2px var(--shadow);
+    }
+    .card h2 {
+      font-family: 'EB Garamond', serif;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+      padding: 12px 16px 8px;
+      margin: 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .card .body { padding: 14px 16px 16px; }
+
+    /* ---------- column 1: picker + capabilities ------------------------- */
+
+    .group + .group { margin-top: 14px; }
+    .group .label {
+      font-size: 0.7rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin: 0 0 6px;
+    }
+
+    select.profile {
+      width: 100%;
+      padding: 8px 10px;
+      font-family: 'EB Garamond', serif;
+      font-size: 1rem;
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
       color: var(--ink);
-      padding: 40px 20px;
-      line-height: 1.6;
     }
 
-    .container { max-width: 1280px; margin: 0 auto; }
-
-    header { text-align: center; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--cream-dark); }
-    header h1 { font-family: 'Source Serif 4', serif; font-size: 2.4rem; font-weight: 600; color: var(--navy); }
-    header .subtitle { color: var(--ink-light); font-size: 1.05rem; margin-top: 6px; }
-    header .badge-row { margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-    header .badge-row span {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
-      padding: 4px 10px; background: #fff; border: 1px solid var(--cream-dark); color: var(--ink-light);
-      letter-spacing: 0.04em;
+    .chips { margin-top: 8px; }
+    .chip {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 6px 10px;
+      border-left: 3px solid var(--ink-3);
+      background: var(--paper-2);
+      margin-top: 4px;
+      font-size: 0.92rem;
     }
+    .chip.evm   { border-left-color: var(--copper); }
+    .chip.btc   { border-left-color: var(--brick); }
+    .chip.empty { border-left-color: var(--ink-3); opacity: 0.65; }
+    .chip .k { font-style: italic; }
+    .chip .v { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.74rem; color: var(--ink-2); }
 
-    .grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
-
-    .panel {
-      background: #fff;
-      border: 1px solid var(--cream-dark);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      padding: 22px;
+    .resource {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 8px 12px;
+      background: var(--paper-2);
+      border: 1px solid transparent;
+      margin-top: 6px;
+      cursor: pointer;
+      transition: background 100ms ease, border-color 100ms ease;
     }
-    .panel h2 {
-      font-family: 'Source Serif 4', serif;
-      font-size: 0.78rem; font-weight: 600;
-      color: var(--navy);
-      text-transform: uppercase; letter-spacing: 0.12em;
-      border-bottom: 2px solid var(--navy);
-      padding-bottom: 8px; margin-bottom: 16px;
-    }
-
-    .capability {
-      background: var(--cream); border-left: 3px solid var(--navy);
-      padding: 10px 12px; margin-bottom: 8px;
-    }
-    .capability.evm { border-left-color: var(--navy); }
-    .capability.btc { border-left-color: var(--gold); }
-    .capability .label { font-weight: 600; font-size: 0.95rem; color: var(--ink); }
-    .capability .details { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--ink-light); margin-top: 2px; }
-
-    .article-btn {
-      background: var(--cream); border: 1px solid var(--cream-dark);
-      padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .article-btn:hover { background: #fff; border-color: var(--navy); }
-    .article-btn.active { background: #fff; border-color: var(--navy); box-shadow: 0 0 0 1px var(--navy); }
-    .article-btn .title { font-weight: 600; font-size: 0.95rem; color: var(--ink); margin-bottom: 4px; }
-    .article-btn .badges { display: flex; gap: 4px; flex-wrap: wrap; }
-    .badge {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
-      padding: 2px 8px; letter-spacing: 0.04em;
-      background: #fff; border: 1px solid var(--cream-dark); color: var(--ink-light);
-    }
-    .badge.x402 { background: var(--navy); color: #fff; border-color: var(--navy); }
-    .badge.free { background: var(--forest); color: #fff; border-color: var(--forest); }
-
-    .scrape-btn {
-      width: 100%; padding: 12px;
-      background: var(--navy); color: #fff; border: none;
-      font-family: 'Source Serif 4', serif; font-size: 0.9rem; font-weight: 600;
-      letter-spacing: 0.06em; text-transform: uppercase;
-      cursor: pointer; margin-top: 12px;
-    }
-    .scrape-btn:hover:not(:disabled) { background: var(--navy-dark); }
-    .scrape-btn:disabled { background: var(--ink-light); cursor: not-allowed; opacity: 0.5; }
-
-    .output-panel { display: flex; flex-direction: column; gap: 18px; }
-    .output-section h3 {
-      font-family: 'Source Serif 4', serif; font-size: 0.72rem; font-weight: 600;
-      color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.1em;
-      margin-bottom: 8px;
+    .resource:hover { background: #fff5dc; border-color: var(--rule); }
+    .resource.active { background: #fff; border-color: var(--copper); box-shadow: 0 0 0 1px var(--copper); }
+    .resource .name { font-size: 1.02rem; }
+    .resource .price { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.74rem; color: var(--ink-2); white-space: nowrap; }
+    .resource .price.free { color: var(--leaf); }
+    .resource-section + .resource-section { margin-top: 14px; }
+    .resource-section .heading {
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin: 0 0 6px;
     }
 
-    .step-list { display: flex; flex-direction: column; gap: 8px; }
-    .step {
-      background: var(--cream); border-left: 3px solid var(--cream-dark);
-      padding: 10px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
-      color: var(--ink);
+    button.go {
+      width: 100%;
+      margin-top: 14px;
+      padding: 10px 16px;
+      background: var(--ink);
+      color: var(--paper);
+      border: 1px solid var(--ink);
+      font-family: 'EB Garamond', serif;
+      font-size: 1rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 100ms ease;
     }
-    .step.pending { border-left-color: var(--ink-light); }
-    .step.active { border-left-color: var(--navy); background: #fff; box-shadow: 0 0 0 1px var(--navy); }
-    .step.done { border-left-color: var(--forest); }
-    .step.error { border-left-color: var(--cranberry); }
-    .step.warning { border-left-color: var(--gold); }
-    .step .step-num {
-      display: inline-block; width: 18px; text-align: right; margin-right: 8px;
-      color: var(--ink-light); font-weight: 600;
-    }
+    button.go:hover:not(:disabled) { background: var(--copper); border-color: var(--copper); }
+    button.go:disabled { background: var(--ink-3); border-color: var(--ink-3); cursor: not-allowed; opacity: 0.6; }
 
-    .accepts-list { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
-    .accept-card {
-      background: #fff; border: 1px solid var(--cream-dark); padding: 10px 12px;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-    }
-    .accept-card.payable { border-left: 3px solid var(--forest); }
-    .accept-card.unpayable { border-left: 3px solid var(--cranberry); opacity: 0.7; }
-    .accept-card .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .accept-card .payable-tag {
-      font-size: 0.65rem; padding: 2px 8px; letter-spacing: 0.04em;
-    }
-    .accept-card .payable-tag.yes { background: var(--forest); color: #fff; }
-    .accept-card .payable-tag.no { background: var(--cranberry); color: #fff; }
-    .accept-card .row { color: var(--ink-light); font-size: 0.7rem; }
-    .accept-card .row b { color: var(--ink); font-weight: 500; }
-    .accept-card.recommended { box-shadow: 0 0 0 2px var(--gold); position: relative; }
-    .accept-card.recommended::before {
-      content: "★ recommended"; position: absolute; top: -10px; right: 10px;
-      background: var(--gold); color: #fff; font-size: 0.6rem;
-      padding: 2px 8px; letter-spacing: 0.06em;
-    }
+    /* ---------- column 2: log ------------------------------------------- */
 
-    .raw-output {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
-      background: #1e1e1e; color: #d4d4d4;
-      padding: 14px; max-height: 240px; overflow: auto;
-      white-space: pre-wrap; word-break: break-all;
+    .log {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      max-height: 720px;
+      overflow-y: auto;
+      padding: 14px 16px;
     }
-
-    .content-preview {
-      background: var(--cream); padding: 16px; border: 1px solid var(--cream-dark);
-      font-family: 'Source Serif 4', serif;
+    .log .empty {
+      color: var(--ink-3);
+      font-style: italic;
+      font-family: 'EB Garamond', serif;
+      font-size: 1rem;
+      padding: 12px 0;
     }
-    .content-preview h1 { font-size: 1.2rem; color: var(--navy); margin-bottom: 6px; }
-    .content-preview p { font-size: 0.95rem; }
+    .log-line {
+      display: grid;
+      grid-template-columns: 64px 24px 1fr;
+      gap: 8px;
+      padding: 4px 0;
+      border-top: 1px solid var(--paper-3);
+      align-items: baseline;
+    }
+    .log-line:first-child { border-top: none; }
+    .log-line .t   { color: var(--ink-3); font-size: 0.72rem; }
+    .log-line .arr { color: var(--ink-3); font-weight: 600; }
+    .log-line .msg { color: var(--ink); word-break: break-word; }
+    .log-line.req .arr { color: var(--copper); }
+    .log-line.res .arr { color: var(--leaf); }
+    .log-line.warn .msg { color: var(--brick); }
+    .log-line.err  .msg { color: var(--brick); font-weight: 500; }
+    .log-line.info .msg { color: var(--ink-2); }
+    .log-line .msg .k { color: var(--copper); }
+    .log-line .msg b  { font-weight: 600; }
 
-    .architecture { margin-top: 28px; padding: 24px; background: #fff; border: 1px solid var(--cream-dark); }
-    .architecture h3 { font-family: 'Source Serif 4', serif; font-size: 0.72rem; font-weight: 600; color: var(--navy); text-transform: uppercase; letter-spacing: 0.12em; text-align: center; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 2px solid var(--navy); max-width: 240px; margin-left: auto; margin-right: auto; }
-    .arch-diagram { display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace; }
-    .arch-box { background: var(--cream); border: 1px solid var(--cream-dark); border-top: 3px solid var(--navy); padding: 16px 20px; text-align: center; min-width: 150px; }
-    .arch-box.client { border-top-color: var(--navy); }
-    .arch-box.server { border-top-color: var(--forest); }
-    .arch-box.web { border-top-color: var(--cranberry); }
-    .arch-box strong { font-family: 'Source Serif 4', serif; font-size: 0.88rem; color: var(--ink); display: block; margin-bottom: 3px; }
-    .arch-box .arch-desc { font-size: 0.7rem; color: var(--ink-light); }
-    .arch-arrow { color: var(--ink-light); font-size: 1.2rem; }
+    .accepts {
+      margin: 6px 0 6px;
+      padding: 8px 10px;
+      background: var(--paper-2);
+      border-left: 3px solid var(--copper);
+    }
+    .accepts .row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 12px;
+      align-items: baseline;
+      padding: 4px 0;
+      font-size: 0.8rem;
+    }
+    .accepts .row + .row { border-top: 1px dotted var(--rule); }
+    .accepts .row .net { color: var(--ink-2); }
+    .accepts .row .amt { color: var(--ink); font-weight: 600; }
+    .accepts .row .pay-yes { color: var(--leaf); }
+    .accepts .row .pay-no  { color: var(--brick); }
+    .accepts .row .star { color: var(--copper); }
 
-    em { color: var(--ink-light); }
+    /* ---------- column 3: rendered HTML --------------------------------- */
+
+    .rendered {
+      padding: 0;
+    }
+    .rendered .nothing {
+      padding: 38px 22px;
+      text-align: center;
+      color: var(--ink-3);
+      font-style: italic;
+      font-size: 1.05rem;
+    }
+    .rendered iframe {
+      display: block;
+      width: 100%;
+      height: 720px;
+      border: 0;
+      background: #000;
+    }
+    .rendered .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px 14px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.72rem;
+      color: var(--ink-2);
+      background: var(--paper-2);
+      border-top: 1px solid var(--rule);
+    }
+    .rendered .meta b { font-weight: 600; }
+    .rendered .meta .pay { color: var(--leaf); }
+
+    /* small inline status pill in header */
+    .status-pill {
+      display: inline-block;
+      padding: 2px 10px;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border: 1px solid var(--rule);
+      color: var(--ink-2);
+      background: var(--paper-2);
+      margin-left: 10px;
+    }
+    .status-pill.ok    { color: var(--leaf);   border-color: var(--leaf); }
+    .status-pill.warn  { color: var(--copper); border-color: var(--copper); }
+    .status-pill.err   { color: var(--brick);  border-color: var(--brick); }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>x402 + MCP Demo</h1>
-      <p class="subtitle">HTTP-native payments · MCP tool surfaces requirements · client cross-references its capabilities</p>
-      <div class="badge-row">
-        <span>x402 v2</span>
-        <span>MCP streamable-http</span>
-        <span>402 → pay → retry</span>
+  <div class="shell">
+
+    <header class="title">
+      <h1><em>x402</em> · MCP inspector</h1>
+      <div class="sub">
+        site: <a id="siteLink" href="http://localhost:3000/states" target="_blank">/states</a>
+        &nbsp;·&nbsp; mcp: <span class="mono">localhost:4000/mcp</span>
+        &nbsp;·&nbsp; web: <span class="mono">localhost:3000</span>
       </div>
     </header>
 
     <div class="grid">
-      <!-- LEFT COLUMN: capabilities + article picker -->
-      <div>
-        <div class="panel">
-          <h2>Client Wallet Capabilities</h2>
-          <p style="font-size: 0.85rem; color: var(--ink-light); margin-bottom: 12px;">
-            What this browser session can pay with. (In the agent demo, these come from <code style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">baw</code>.)
-          </p>
-          <div class="capability evm">
-            <div class="label">EVM (Base Sepolia)</div>
-            <div class="details">eip155:84532 · USDC · 0x036C…CF7e</div>
-          </div>
-          <div class="capability btc">
-            <div class="label">Bitcoin mainnet</div>
-            <div class="details">bip122:0000…1e93 · BTC</div>
-          </div>
-        </div>
 
-        <div class="panel" style="margin-top: 18px;">
-          <h2>Resources</h2>
-          <div class="article-btn" data-path="/article/free">
-            <div class="title">Free Article</div>
-            <div class="badges"><span class="badge free">no payment</span><span class="badge">attribution</span></div>
+      <!-- ============== col 1: picker ============== -->
+      <div class="card">
+        <h2>What &amp; how</h2>
+        <div class="body">
+          <div class="group">
+            <p class="label">Wallet</p>
+            <select class="profile" id="profileSelect">
+              <option value="evm-btc">EVM (Base Sepolia) + Bitcoin</option>
+              <option value="evm-only">EVM only (Base Sepolia)</option>
+              <option value="btc-only">Bitcoin only</option>
+              <option value="multichain">Multi-chain EVM (Base + Avax Fuji)</option>
+              <option value="empty">Nothing</option>
+            </select>
+            <div class="chips" id="chips"></div>
           </div>
-          <div class="article-btn" data-path="/article/premium">
-            <div class="title">Premium Article</div>
-            <div class="badges"><span class="badge x402">x402</span><span class="badge">$0.01 USDC</span></div>
+
+          <div class="group">
+            <p class="label">Resource</p>
+            <div class="resource-section">
+              <div class="resource" data-path="/states">
+                <span class="name">Index</span>
+                <span class="price free">free</span>
+              </div>
+              <div class="resource" data-path="/states/maine">
+                <span class="name">Maine</span>
+                <span class="price">$0.001 · base-sep</span>
+              </div>
+              <div class="resource" data-path="/states/new-hampshire">
+                <span class="name">New Hampshire</span>
+                <span class="price">$0.01 · base-sep</span>
+              </div>
+              <div class="resource" data-path="/states/vermont">
+                <span class="name">Vermont</span>
+                <span class="price">$0.02 USDC / 200 sat</span>
+              </div>
+              <div class="resource" data-path="/states/massachusetts">
+                <span class="name">Massachusetts</span>
+                <span class="price">$0.10 · base-sep</span>
+              </div>
+              <div class="resource" data-path="/states/rhode-island">
+                <span class="name">Rhode Island</span>
+                <span class="price">500 sat · BTC</span>
+              </div>
+              <div class="resource" data-path="/states/connecticut">
+                <span class="name">Connecticut</span>
+                <span class="price">$0.05 · avax-fuji</span>
+              </div>
+            </div>
           </div>
-          <div class="article-btn" data-path="/article/crypto">
-            <div class="title">Crypto-Gated</div>
-            <div class="badges"><span class="badge x402">x402</span><span class="badge">1000 sats BTC</span></div>
-          </div>
-          <div class="article-btn" data-path="/article/multi">
-            <div class="title">Multi-Option</div>
-            <div class="badges"><span class="badge x402">x402</span><span class="badge">USDC or BTC</span></div>
-          </div>
-          <div class="article-btn" data-path="/article/public">
-            <div class="title">Public Domain</div>
-            <div class="badges"><span class="badge free">no payment</span></div>
-          </div>
-          <button class="scrape-btn" id="scrapeBtn" disabled>Select a resource</button>
+
+          <button class="go" id="goBtn" disabled>Pick a resource</button>
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: output -->
-      <div class="panel output-panel">
-        <h2>Flow</h2>
-
-        <div class="output-section">
-          <h3>Steps</h3>
-          <div class="step-list" id="stepList">
-            <div class="step pending"><em>Pick a resource and click Fetch.</em></div>
-          </div>
-        </div>
-
-        <div class="output-section" id="acceptsSection" style="display:none;">
-          <h3>Payment Options &amp; Cross-Reference</h3>
-          <div class="accepts-list" id="acceptsList"></div>
-        </div>
-
-        <div class="output-section" id="contentSection" style="display:none;">
-          <h3>Content</h3>
-          <div class="content-preview" id="contentPreview"></div>
-        </div>
-
-        <div class="output-section" id="rawSection" style="display:none;">
-          <h3>Raw MCP Tool Result</h3>
-          <pre class="raw-output" id="rawOutput"></pre>
+      <!-- ============== col 2: log ============== -->
+      <div class="card">
+        <h2>Traffic <span class="status-pill" id="statusPill">idle</span></h2>
+        <div class="log" id="log">
+          <p class="empty">No requests yet. Pick a resource on the left and hit fetch — every step of the MCP/HTTP/x402 conversation will appear here.</p>
         </div>
       </div>
-    </div>
 
-    <div class="architecture">
-      <h3>System Architecture</h3>
-      <div class="arch-diagram">
-        <div class="arch-box client">
-          <strong>Client</strong>
-          <div class="arch-desc">browser or goose+baw<br>declares capabilities</div>
-        </div>
-        <div class="arch-arrow">⟷</div>
-        <div class="arch-box server">
-          <strong>MCP Server</strong>
-          <div class="arch-desc">web_scrape<br>cross-references<br>capabilities × accepts[]</div>
-        </div>
-        <div class="arch-arrow">⟷</div>
-        <div class="arch-box web">
-          <strong>x402 Web Server</strong>
-          <div class="arch-desc">402 + Payment-Required<br>then 200 on X-PAYMENT</div>
+      <!-- ============== col 3: rendered ============== -->
+      <div class="card rendered">
+        <h2>Rendered HTML</h2>
+        <div id="renderedBody">
+          <div class="nothing">Server response will preview here.</div>
         </div>
       </div>
     </div>
+
   </div>
 
   <script>
-    // ---- config -----------------------------------------------------------
-    const MCP_URL = 'http://localhost:4000/mcp';
-    const WEB_SERVER_URL = 'http://localhost:3000';
+    // ---------- config ----------------------------------------------------
 
-    // What this browser pretends to have. In the agent demo this comes from `baw`.
-    const CLIENT_CAPABILITIES = {
-      networks: ['eip155:84532', 'bip122:000000000019d6689c085ae165831e93'],
-      assets: [
-        '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC Base Sepolia
-        'BTC',
-      ],
-      schemes: ['exact'],
-      maxAmountUSD: 1.0,
-    };
+    const MCP_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:4000/mcp' : 'http://mcp-server:4000/mcp';
+    const WEB_SERVER_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:3000' : 'http://web-server:3000';
 
-    // ---- DOM helpers ------------------------------------------------------
-    const stepList = document.getElementById('stepList');
-    const acceptsSection = document.getElementById('acceptsSection');
-    const acceptsList = document.getElementById('acceptsList');
-    const contentSection = document.getElementById('contentSection');
-    const contentPreview = document.getElementById('contentPreview');
-    const rawSection = document.getElementById('rawSection');
-    const rawOutput = document.getElementById('rawOutput');
-    const scrapeBtn = document.getElementById('scrapeBtn');
-
-    let stepCounter = 0;
-    function clearOutput() {
-      stepList.innerHTML = '';
-      acceptsSection.style.display = 'none';
-      acceptsList.innerHTML = '';
-      contentSection.style.display = 'none';
-      contentPreview.innerHTML = '';
-      rawSection.style.display = 'none';
-      rawOutput.textContent = '';
-      stepCounter = 0;
+    // Make the header "site" link point to whichever host the demo's web
+    // server is reachable on (localhost in dev, the in-network hostname
+    // when running under docker-compose).
+    {
+      const a = document.getElementById('siteLink');
+      if (a) a.href = `${WEB_SERVER_URL}/states`;
     }
-    function addStep(text, level = 'active') {
-      stepCounter += 1;
+
+    const CAPABILITY_PROFILES = {
+      'evm-btc': {
+        chips: [
+          { kind: 'evm', label: 'EVM · Base Sepolia',   detail: 'eip155:84532 · USDC' },
+          { kind: 'btc', label: 'Bitcoin mainnet',      detail: 'bip122:0000…1e93 · BTC' },
+        ],
+        capabilities: {
+          networks: ['eip155:84532', 'bip122:000000000019d6689c085ae165831e93'],
+          assets: ['0x036CbD53842c5426634e7929541eC2318f3dCF7e', 'BTC'],
+          schemes: ['exact'], maxAmountUSD: 1.0,
+        },
+      },
+      'evm-only': {
+        chips: [{ kind: 'evm', label: 'EVM · Base Sepolia', detail: 'eip155:84532 · USDC' }],
+        capabilities: {
+          networks: ['eip155:84532'],
+          assets: ['0x036CbD53842c5426634e7929541eC2318f3dCF7e'],
+          schemes: ['exact'], maxAmountUSD: 1.0,
+        },
+      },
+      'btc-only': {
+        chips: [{ kind: 'btc', label: 'Bitcoin mainnet', detail: 'bip122:0000…1e93 · BTC' }],
+        capabilities: {
+          networks: ['bip122:000000000019d6689c085ae165831e93'],
+          assets: ['BTC'],
+          schemes: ['exact'], maxAmountUSD: 1.0,
+        },
+      },
+      'multichain': {
+        chips: [
+          { kind: 'evm', label: 'EVM · Base Sepolia',   detail: 'eip155:84532 · USDC' },
+          { kind: 'evm', label: 'EVM · Avalanche Fuji', detail: 'eip155:43113 · USDC' },
+        ],
+        capabilities: {
+          networks: ['eip155:84532', 'eip155:43113'],
+          assets: ['0x036CbD53842c5426634e7929541eC2318f3dCF7e', '0x5425890298aed601595a70AB815c96711a31Bc65'],
+          schemes: ['exact'], maxAmountUSD: 1.0,
+        },
+      },
+      'empty': {
+        chips: [{ kind: 'empty', label: 'No wallet', detail: 'no networks · no assets' }],
+        capabilities: { networks: [], assets: [], schemes: ['exact'], maxAmountUSD: 0 },
+      },
+    };
+    let CURRENT_PROFILE = 'evm-btc';
+    const capsNow = () => CAPABILITY_PROFILES[CURRENT_PROFILE].capabilities;
+
+    // ---------- DOM helpers ----------------------------------------------
+
+    const $ = id => document.getElementById(id);
+    const log = $('log');
+    const statusPill = $('statusPill');
+    const goBtn = $('goBtn');
+    const chips = $('chips');
+    const renderedBody = $('renderedBody');
+    const profileSelect = $('profileSelect');
+
+    function escHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+    function timeNow() {
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${String(d.getMilliseconds()).padStart(3,'0')}`;
+    }
+
+    let logHasContent = false;
+    function logLine({ kind, arrow, html }) {
+      if (!logHasContent) {
+        log.innerHTML = '';
+        logHasContent = true;
+      }
       const div = document.createElement('div');
-      div.className = `step ${level}`;
-      div.innerHTML = `<span class="step-num">${stepCounter}</span>${text}`;
-      stepList.appendChild(div);
+      div.className = `log-line ${kind || ''}`;
+      div.innerHTML = `<span class="t">${timeNow()}</span><span class="arr">${arrow || ''}</span><span class="msg">${html}</span>`;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
       return div;
     }
-    function setStep(div, text, level) {
-      div.className = `step ${level}`;
-      const num = div.querySelector('.step-num');
-      div.innerHTML = '';
-      if (num) div.appendChild(num);
-      const span = document.createElement('span');
-      span.innerHTML = text;
-      div.appendChild(span);
-    }
-    function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function logRequest(html)  { return logLine({ kind: 'req',  arrow: '→', html }); }
+    function logResponse(html) { return logLine({ kind: 'res',  arrow: '←', html }); }
+    function logInfo(html)     { return logLine({ kind: 'info', arrow: '·', html }); }
+    function logWarn(html)     { return logLine({ kind: 'warn', arrow: '!', html }); }
+    function logErr(html)      { return logLine({ kind: 'err',  arrow: '✗', html }); }
 
-    function renderAccepts(accepts, recommendedIndex) {
-      acceptsSection.style.display = 'block';
-      acceptsList.innerHTML = '';
-      accepts.forEach((a, i) => {
-        const card = document.createElement('div');
-        card.className = `accept-card ${a.payable ? 'payable' : 'unpayable'}${i === recommendedIndex ? ' recommended' : ''}`;
-        const tag = a.payable
-          ? '<span class="payable-tag yes">payable</span>'
-          : '<span class="payable-tag no">not payable</span>';
-        card.innerHTML = `
-          <div class="header-row"><b>option ${i}</b>${tag}</div>
-          <div class="row"><b>scheme:</b> ${escapeHtml(a.scheme)} &nbsp; <b>network:</b> ${escapeHtml(a.network)}</div>
-          <div class="row"><b>amount:</b> ${escapeHtml(a.amount)} &nbsp; <b>asset:</b> ${escapeHtml(a.asset)}</div>
-          <div class="row"><b>payTo:</b> ${escapeHtml(a.payTo)}</div>
-          <div class="row" style="margin-top:4px; color:${a.payable ? 'var(--forest)' : 'var(--cranberry)'};">→ ${escapeHtml(a.payableReason)}</div>
-        `;
-        acceptsList.appendChild(card);
+    function clearAll() {
+      log.innerHTML = '<p class="empty">No requests yet. Pick a resource on the left and hit fetch — every step of the MCP/HTTP/x402 conversation will appear here.</p>';
+      logHasContent = false;
+      renderedBody.innerHTML = '<div class="nothing">Server response will preview here.</div>';
+      setStatus('idle');
+    }
+    function setStatus(label, level) {
+      statusPill.textContent = label;
+      statusPill.className = 'status-pill' + (level ? ' ' + level : '');
+    }
+
+    // ---------- profile + resource pickers --------------------------------
+
+    function renderProfile() {
+      const p = CAPABILITY_PROFILES[CURRENT_PROFILE];
+      chips.innerHTML = p.chips.map(c => `
+        <div class="chip ${c.kind}">
+          <span class="k">${escHtml(c.label)}</span>
+          <span class="v">${escHtml(c.detail)}</span>
+        </div>
+      `).join('');
+    }
+    profileSelect.addEventListener('change', e => {
+      CURRENT_PROFILE = e.target.value;
+      renderProfile();
+    });
+    renderProfile();
+
+    let selectedPath = null;
+    document.querySelectorAll('.resource').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.resource').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        selectedPath = el.dataset.path;
+        goBtn.disabled = false;
+        goBtn.textContent = `Fetch ${selectedPath}`;
       });
-    }
+    });
+    goBtn.addEventListener('click', () => { if (selectedPath) performScrape(selectedPath); });
 
-    // ---- MCP transport ----------------------------------------------------
+    // ---------- MCP transport ---------------------------------------------
+
     let sessionId = null;
     let requestId = 0;
 
     async function mcpRequest(method, params = {}) {
       const id = ++requestId;
-      const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
+      };
       if (sessionId) headers['mcp-session-id'] = sessionId;
-      const response = await fetch(MCP_URL, { method: 'POST', headers, body: JSON.stringify({ jsonrpc: '2.0', id, method, params }) });
-      const newSid = response.headers.get('mcp-session-id');
+      const r = await fetch(MCP_URL, {
+        method: 'POST', headers,
+        body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+      });
+      const newSid = r.headers.get('mcp-session-id');
       if (newSid) sessionId = newSid;
-      const ct = response.headers.get('content-type') || '';
+      const ct = r.headers.get('content-type') || '';
       if (ct.includes('text/event-stream')) {
-        const text = await response.text();
+        const text = await r.text();
         for (const line of text.split('\n')) {
           if (line.startsWith('data:')) {
             const d = JSON.parse(line.slice(5).trim());
@@ -374,22 +549,24 @@
         }
         throw new Error('No response in SSE stream');
       }
-      return await response.json();
+      return await r.json();
     }
-
-    async function initializeMcp() {
+    async function initMcp() {
       await mcpRequest('initialize', {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'browser-x402-demo', version: '2.0.0' },
+        clientInfo: { name: 'x402-inspector', version: '3.0.0' },
       });
       await fetch(MCP_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream', 'mcp-session-id': sessionId },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json, text/event-stream',
+          'mcp-session-id': sessionId,
+        },
         body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
       });
     }
-
     async function callTool(name, args) {
       const r = await mcpRequest('tools/call', { name, arguments: args });
       if (r.error) throw new Error(r.error.message);
@@ -398,94 +575,131 @@
       return JSON.parse(text.text);
     }
 
-    // ---- demo flow --------------------------------------------------------
-    async function performScrape(path) {
-      clearOutput();
-      const url = `${WEB_SERVER_URL}${path}`;
+    // ---------- accepts table -------------------------------------------
 
-      const s1 = addStep(`MCP <code>web_scrape</code> → <b>${escapeHtml(url)}</b><br><span style="color:var(--ink-light);">passing client_capabilities: ${escapeHtml(CLIENT_CAPABILITIES.networks.join(', '))}</span>`, 'active');
+    function acceptsTable(accepts, recIdx) {
+      const rows = accepts.map((a, i) => {
+        const star = i === recIdx ? '<span class="star">★</span>' : '';
+        const pay = a.payable
+          ? `<span class="pay-yes">payable</span>`
+          : `<span class="pay-no">${escHtml(a.payableReason || 'not payable')}</span>`;
+        return `
+          <div class="row">
+            <span class="net">${escHtml(a.network)}</span>
+            <span class="amt">${escHtml(a.amount)}</span>
+            <span>${pay}</span>
+            <span>${star}</span>
+          </div>`;
+      }).join('');
+      return `<div class="accepts">${rows}</div>`;
+    }
+
+    // ---------- scrape flow ---------------------------------------------
+
+    async function performScrape(path) {
+      clearAll();
+      setStatus('working', 'warn');
+      const url = `${WEB_SERVER_URL}${path}`;
+      const caps = capsNow();
+      const capList = caps.networks.length ? caps.networks.join(', ') : '(empty)';
+
+      logInfo(`mcp session: <span class="mono">${sessionId ? sessionId.slice(0,8)+'…' : 'new'}</span> · profile: <b>${CURRENT_PROFILE}</b>`);
+      logRequest(`<b>tools/call</b> web_scrape · <span class="mono">${escHtml(url)}</span>`);
+      logInfo(`<span class="k">client_capabilities</span>: ${escHtml(capList)}`);
+
       try {
         if (!sessionId) {
-          await initializeMcp();
+          logInfo(`mcp <b>initialize</b> handshake`);
+          await initMcp();
+          logResponse(`mcp session ready · <span class="mono">${sessionId.slice(0,8)}…</span>`);
         }
-        const result = await callTool('web_scrape', { url, client_capabilities: CLIENT_CAPABILITIES });
-        rawSection.style.display = 'block';
-        rawOutput.textContent = JSON.stringify(result, null, 2);
+        const result = await callTool('web_scrape', { url, client_capabilities: caps });
+        logResponse(`mcp result · status=<b>${escHtml(result.status)}</b>${result.httpStatus ? ' · http=' + result.httpStatus : ''}`);
 
         if (result.status === 'error') {
-          setStep(s1, `MCP request failed: ${escapeHtml(result.message)}`, 'error');
+          logErr(escHtml(result.message));
+          setStatus('error', 'err');
           return;
         }
-
         if (result.status === 'success') {
-          setStep(s1, `Direct 200 OK — no payment required.`, 'done');
-          renderContent(result);
+          logInfo(`web server returned <b>200</b> directly · no payment required`);
+          renderInIframe(result, /*paid*/ false);
+          setStatus('200 ok', 'ok');
           return;
         }
 
-        // status === 'payment_required'
-        setStep(s1, `Web server returned <b>402 Payment Required</b>. ${result.totalCount} option(s), ${result.payableCount} payable.`, 'warning');
+        // payment_required
+        logWarn(`web server: <b>402 Payment Required</b> · ${result.totalCount} option(s), ${result.payableCount} payable`);
+        log.appendChild(htmlToFragment(acceptsTable(result.accepts, result.recommendedIndex)));
 
-        const s2 = addStep('Cross-referencing client capabilities × server <code>accepts[]</code>...', 'active');
-        renderAccepts(result.accepts, result.recommendedIndex);
         if (result.payableCount === 0) {
-          setStep(s2, `No payable options. ${escapeHtml(result.next.description)}`, 'error');
+          logErr(`no payable options under current capabilities — stopping`);
+          setStatus('blocked', 'err');
+          renderedBody.innerHTML = `<div class="nothing">Wallet can't pay any of the offered options.<br><span style="font-size:0.85rem;">Try a different profile.</span></div>`;
           return;
         }
         const rec = result.accepts[result.recommendedIndex];
-        setStep(s2, `Recommended option <b>${result.recommendedIndex}</b>: ${escapeHtml(rec.amount)} on <b>${escapeHtml(rec.network)}</b> to <code>${escapeHtml(rec.payTo)}</code>.`, 'done');
+        logInfo(`recommended option <b>#${result.recommendedIndex}</b>: ${escHtml(rec.amount)} on <b>${escHtml(rec.network)}</b> → <span class="mono">${escHtml(rec.payTo)}</span>`);
 
-        const s3 = addStep(`Simulating wallet payment (in the agent demo this is <code>baw pay</code>)...`, 'active');
-        await new Promise(r => setTimeout(r, 700));
-        const fakeProof = `demo-proof-${Math.random().toString(36).slice(2, 12)}`;
-        setStep(s3, `Wallet returned X-PAYMENT proof <code>${escapeHtml(fakeProof)}</code>.`, 'done');
+        // Simulated wallet payment.
+        await new Promise(r => setTimeout(r, 350));
+        const proof = `demo-proof-${Math.random().toString(36).slice(2, 12)}`;
+        logInfo(`wallet signed payment · proof <span class="mono">${escHtml(proof)}</span>`);
 
-        const s4 = addStep(`Retrying <code>web_scrape</code> with <code>payment_proof</code>...`, 'active');
-        const result2 = await callTool('web_scrape', { url, payment_proof: fakeProof });
-        rawOutput.textContent = JSON.stringify(result2, null, 2);
+        // Retry.
+        logRequest(`<b>tools/call</b> web_scrape · retry with <span class="k">payment_proof</span>`);
+        const result2 = await callTool('web_scrape', { url, payment_proof: proof });
+        logResponse(`mcp result · status=<b>${escHtml(result2.status)}</b>${result2.httpStatus ? ' · http=' + result2.httpStatus : ''}`);
+
         if (result2.status === 'success') {
-          setStep(s4, `Server returned <b>200 OK</b> after payment. Content unlocked.`, 'done');
-          renderContent(result2);
+          logInfo(`x-payment-response received · content unlocked`);
+          renderInIframe(result2, /*paid*/ true);
+          setStatus('paid · 200', 'ok');
         } else if (result2.status === 'payment_required') {
-          setStep(s4, `Still 402 — payment proof rejected.`, 'error');
+          logErr(`server still 402 — proof rejected`);
+          setStatus('rejected', 'err');
         } else {
-          setStep(s4, `Error on retry: ${escapeHtml(result2.message || 'unknown')}`, 'error');
+          logErr(escHtml(result2.message || 'unknown error on retry'));
+          setStatus('error', 'err');
         }
       } catch (e) {
-        setStep(s1, `Error: ${escapeHtml(e.message)}`, 'error');
+        logErr(escHtml(e.message));
+        setStatus('error', 'err');
         sessionId = null;
       }
     }
 
-    function renderContent(result) {
-      contentSection.style.display = 'block';
-      contentPreview.innerHTML = result.content || '<em>(empty body)</em>';
-      if (result.attribution) {
-        const attr = document.createElement('div');
-        attr.style.cssText = 'margin-top:12px; padding:8px 12px; font-size:0.8rem; background:#fff; border-left:3px solid var(--navy); color:var(--ink-light); font-family:JetBrains Mono, monospace;';
-        attr.innerHTML = `<b>attribution:</b> ${escapeHtml(result.attribution.author)} · ${escapeHtml(result.attribution.license)}`;
-        contentPreview.appendChild(attr);
-      }
-      if (result.paymentResponse) {
-        const pr = document.createElement('div');
-        pr.style.cssText = 'margin-top:8px; padding:8px 12px; font-size:0.8rem; background:#fff; border-left:3px solid var(--forest); color:var(--ink-light); font-family:JetBrains Mono, monospace;';
-        pr.innerHTML = `<b>X-PAYMENT-RESPONSE:</b> ${escapeHtml(JSON.stringify(result.paymentResponse))}`;
-        contentPreview.appendChild(pr);
-      }
+    function htmlToFragment(html) {
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html.trim();
+      return tpl.content;
     }
 
-    // ---- wire up UI -------------------------------------------------------
-    let selectedPath = null;
-    document.querySelectorAll('.article-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.article-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedPath = btn.dataset.path;
-        scrapeBtn.disabled = false;
-        scrapeBtn.textContent = `Fetch: ${btn.querySelector('.title').textContent}`;
-      });
-    });
-    scrapeBtn.addEventListener('click', () => { if (selectedPath) performScrape(selectedPath); });
+    function renderInIframe(result, paid) {
+      const html = result.content || '';
+      renderedBody.innerHTML = '';
+      const looksFull = /^\s*<(\!doctype|html|head|body)/i.test(html);
+      if (looksFull) {
+        const f = document.createElement('iframe');
+        f.setAttribute('sandbox', 'allow-same-origin');
+        f.srcdoc = html;
+        renderedBody.appendChild(f);
+      } else if (html) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'padding:18px 20px; font-family:EB Garamond,serif; font-size:1.05rem; line-height:1.55;';
+        wrap.innerHTML = html;
+        renderedBody.appendChild(wrap);
+      } else {
+        renderedBody.innerHTML = '<div class="nothing">Empty body.</div>';
+        return;
+      }
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const left  = `<span><b>http ${result.httpStatus ?? '—'}</b> · ${escHtml(result.url || '')}</span>`;
+      const right = paid ? `<span class="pay">x-payment-response · paid</span>` : `<span>no payment</span>`;
+      meta.innerHTML = `${left}${right}`;
+      renderedBody.appendChild(meta);
+    }
   </script>
 </body>
 </html>
