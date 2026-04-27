@@ -296,9 +296,9 @@
     <header class="title">
       <h1><em>x402</em> · MCP inspector</h1>
       <div class="sub">
-        site: <a id="siteLink" href="http://localhost:3000/states" target="_blank">/states</a>
-        &nbsp;·&nbsp; mcp: <span class="mono">localhost:4000/mcp</span>
-        &nbsp;·&nbsp; web: <span class="mono">localhost:3000</span>
+        site: <a id="siteLink" href="http://localhost:4000/states" target="_blank">/states</a>
+        &nbsp;·&nbsp; mcp: <span class="mono">localhost:5000/mcp</span>
+        &nbsp;·&nbsp; web: <span class="mono">localhost:4000</span>
       </div>
     </header>
 
@@ -381,9 +381,9 @@
     // ---------- config ----------------------------------------------------
 
     const MCP_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:4000/mcp' : 'http://mcp-server:4000/mcp';
+      ? 'http://localhost:5000/mcp' : 'http://mcp-server:5000/mcp';
     const WEB_SERVER_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000' : 'http://web-server:3000';
+      ? 'http://localhost:4000' : 'http://web-server:4000';
 
     // Make the header "site" link point to whichever host the demo's web
     // server is reachable on (localhost in dev, the in-network hostname

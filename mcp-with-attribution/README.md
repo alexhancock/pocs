@@ -24,9 +24,9 @@ TypeScript and runs locally with no external dependencies beyond Node.
 
 | Piece | Role |
 |---|---|
-| **Web server** (`:3000`) | Emits real x402 v2 `402 Payment Required` responses with a `Payment-Required` header carrying `accepts[]` (USDC on Base Sepolia, BTC, multi-option, free, public). Serves the protected content once a non-empty `X-PAYMENT` arrives. |
-| **MCP server** (`:4000`) | Exposes a single `web_scrape` tool over Streamable HTTP. Hits the web server, decodes the 402, **cross-references** each `accepts[]` entry against the caller's declared `client_capabilities`, and returns a `payment_required` result with `payable: true/false` and a `recommendedIndex`. |
-| **Frontend** (`:8080`) | Static demo UI. Mocks a wallet, picks an article, drives the MCP tool, and visually replays each step (402 → cross-ref → simulated pay → 200). |
+| **Inspector** (`:3000`) | Static demo UI. Picks a wallet capability profile + a state page, drives the MCP tool over the wire, and shows three things side-by-side: the live request log, the cross-referenced accepts table, and a sandboxed iframe rendering the actual HTML the server returned. |
+| **Web server** (`:4000`) | Emits real x402 v2 `402 Payment Required` responses with a `Payment-Required` header carrying `accepts[]` (USDC on Base Sepolia, BTC, multi-option, free, public). Serves `/states/*` (the New England demo site) and `/article/*` (the original PoC fixtures). Serves the protected content once a non-empty `X-PAYMENT` arrives. |
+| **MCP server** (`:5000`) | Exposes a single `web_scrape` tool over Streamable HTTP. Hits the web server, decodes the 402, **cross-references** each `accepts[]` entry against the caller's declared `client_capabilities`, and returns a `payment_required` result with `payable: true/false` and a `recommendedIndex`. |
 | **`x402-pay` CLI** | A separate single-file Node script (lives at `~/.local/bin/x402-pay`) that uses Coinbase's reference `x402-fetch` library + a throwaway EVM key. Lets an agent pay an x402 endpoint with one command and produces a real `X-PAYMENT` proof. |
 | **`x402-pay` skill** | Goose skill that auto-loads when the agent encounters x402 / 402 / paywall language and teaches it to use the CLI above. |
 | **Endpoints offered by the web server** | `/article/free` (attribution only) · `/article/premium` (USDC on Base Sepolia, 0.01 USDC) · `/article/crypto` (BTC, 1000 sats) · `/article/multi` (USDC **or** BTC) · `/article/public` · `/api/articles` (catalog) · `/health` |
@@ -54,9 +54,9 @@ npm run dev:all
 That brings up all three servers with hot reload (via `tsx`):
 
 ```
-[web]  🌐 x402-aware web server on http://localhost:3000
-[mcp]  🔌 x402-aware MCP server on http://localhost:4000
-[fe]   🎨 Frontend server running on http://localhost:8080
+[fe]   🎨 Inspector running on http://localhost:3000
+[web]  🌐 x402-aware web server on http://localhost:4000
+[mcp]  🔌 x402-aware MCP server on http://localhost:5000
 ```
 
 `Ctrl+C` stops all three. Logs are color-coded.
@@ -66,8 +66,8 @@ That brings up all three servers with hot reload (via `tsx`):
 
 ### Drive it from the browser
 
-Open <http://localhost:8080>. Pick a wallet capability profile on the
-left, pick an article, click **Fetch**. The middle column animates
+Open <http://localhost:3000>. Pick a wallet capability profile on the
+left, pick a state page, click **Fetch**. The middle column animates
 through:
 
 1. MCP `web_scrape` called with `client_capabilities`
@@ -82,7 +82,7 @@ flip between USDC-payable and BTC-payable.
 
 Simplest agent path. Just have the web server running and ask:
 
-> Use `x402-pay` to fetch `http://localhost:3000/article/multi`.
+> Use `x402-pay` to fetch `http://localhost:4000/states/maine`.
 
 Goose loads the `x402-pay` skill automatically (it triggers on
 "x402" / "402" / "paywall" / "payment_required") and runs the CLI.
@@ -112,7 +112,7 @@ extensions:
       decodes HTTP 402 responses, surfaces accepts[] payment requirements,
       and cross-references them against client_capabilities. Retry with
       payment_proof obtained from a wallet (see the x402-pay skill).
-    uri: http://localhost:4000/mcp
+    uri: http://localhost:5000/mcp
     timeout: 60
     headers: {}
     env_keys: []
@@ -122,14 +122,14 @@ extensions:
 Restart goose. Then ask:
 
 > Use `x402_mcp.web_scrape` to fetch
-> `http://localhost:3000/article/multi`. My wallet can pay USDC on Base
+> `http://localhost:4000/states/vermont`. My wallet can pay USDC on Base
 > Sepolia via `x402-pay`.
 
 Goose will:
 
 1. call `web_scrape` with your stated capabilities;
 2. inspect the annotated `accepts[]` and pick the recommended payable option;
-3. run `x402-pay http://localhost:3000/article/multi` to obtain an `X-PAYMENT` proof;
+3. run `x402-pay http://localhost:4000/states/vermont` to obtain an `X-PAYMENT` proof;
 4. call `web_scrape` again with `payment_proof`;
 5. return the unlocked content.
 
