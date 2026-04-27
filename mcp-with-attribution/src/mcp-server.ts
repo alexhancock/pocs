@@ -149,6 +149,18 @@ interface AttributionInfo {
 function parseAttribution(headers: Headers): AttributionInfo | null {
   const h = headers.get("X-Content-Attribution");
   if (!h) return null;
+  // The web server base64-encodes attribution to allow non-ASCII
+  // characters (em-dashes, curly quotes, etc.) — RFC 7230 only permits
+  // ISO-8859-1 in header values. Try base64 first, then fall back to
+  // raw JSON for older clients/recordings.
+  try {
+    const decoded = Buffer.from(h, "base64").toString("utf8");
+    if (decoded.startsWith("{")) {
+      return JSON.parse(decoded) as AttributionInfo;
+    }
+  } catch {
+    /* fall through */
+  }
   try {
     return JSON.parse(h) as AttributionInfo;
   } catch {

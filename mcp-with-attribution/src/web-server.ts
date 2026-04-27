@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import { STATES, getState, renderIndex, renderStateBody, renderPaywall } from "./states.js";
 
 /**
  * x402 v2 wire format demo web server.
@@ -52,6 +53,14 @@ interface RouteSpec {
   accepts: PaymentRequirement[];
   body: () => string;
   contentType?: string;
+  /**
+   * Optional HTML paywall renderer. When set, an unpaid request that
+   * prefers HTML (Accept: text/html — i.e. a browser, not the MCP scraper
+   * or `x402-pay`) will receive this page instead of the canonical JSON
+   * 402 body. The `Payment-Required` header is still emitted so any
+   * machine client reading the response can still parse it.
+   */
+  htmlPaywall?: () => string;
 }
 
 // ---- demo wallet addresses ---------------------------------------------
@@ -155,6 +164,21 @@ function toCanonicalAccept(
   };
 }
 
+/**
+ * Serialize an attribution object for the X-Content-Attribution header.
+ *
+ * HTTP/1.1 only allows ISO-8859-1 in header values (RFC 7230 §3.2.4), so
+ * non-ASCII characters like em-dashes or curly quotes that appear in
+ * editorial copy will cause Node to throw `ERR_INVALID_CHAR`. Base64-
+ * encoding the UTF-8 JSON sidesteps the encoding question entirely;
+ * clients decode with `Buffer.from(value, "base64").toString("utf8")`.
+ */
+function encodeAttributionHeader(
+  attribution: { author: string; source: string; license: string },
+): string {
+  return Buffer.from(JSON.stringify(attribution), "utf8").toString("base64");
+}
+
 function sendProtected(req: Request, res: Response, spec: RouteSpec) {
   const xPayment = req.header("X-PAYMENT");
 
@@ -194,10 +218,22 @@ function sendProtected(req: Request, res: Response, spec: RouteSpec) {
       .map((a) => toCanonicalAccept(req, spec.description, mimeType, a));
     res.status(402);
     res.setHeader("Payment-Required", headerValue);
-    res.setHeader("Content-Type", "application/json");
     if (spec.attribution) {
-      res.setHeader("X-Content-Attribution", JSON.stringify(spec.attribution));
+      res.setHeader("X-Content-Attribution", encodeAttributionHeader(spec.attribution));
     }
+
+    // Content negotiation:
+    //   - HTML-preferring clients (browsers) get the gorgeous paywall page
+    //     when the route provides one;
+    //   - everything else (MCP scraper, `x402-pay`, curl, etc.) gets the
+    //     canonical JSON body.
+    const wantsHtml = (req.headers.accept ?? "").includes("text/html");
+    if (wantsHtml && spec.htmlPaywall) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(spec.htmlPaywall());
+      return;
+    }
+    res.setHeader("Content-Type", "application/json");
     res.json({
       x402Version: 1,
       error: "Payment required",
@@ -213,7 +249,7 @@ function sendProtected(req: Request, res: Response, spec: RouteSpec) {
   );
 
   if (spec.attribution) {
-    res.setHeader("X-Content-Attribution", JSON.stringify(spec.attribution));
+    res.setHeader("X-Content-Attribution", encodeAttributionHeader(spec.attribution));
   }
   res.setHeader(
     "X-PAYMENT-RESPONSE",
@@ -379,6 +415,41 @@ app.get("/article/public", (_req: Request, res: Response) => {
   `);
 });
 
+// -----------------------------------------------------------------------
+// Six States — a standalone paid-content site under /states/*
+//
+// Each New England state has its own page, with its own EB-Garamond hero,
+// its own rich background palette, and its own x402 paywall config.
+// Visit `/` (which redirects to `/states`) to see the index.
+// -----------------------------------------------------------------------
+
+app.get("/", (_req: Request, res: Response) => {
+  res.redirect(302, "/states");
+});
+
+app.get("/states", (_req: Request, res: Response) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(renderIndex());
+});
+
+app.get("/states/:slug", (req: Request, res: Response) => {
+  const state = getState(req.params.slug);
+  if (!state) {
+    res.status(404);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(`<!doctype html><meta charset="utf-8"><title>not found</title><body style="font-family:'EB Garamond',Georgia,serif;background:#0a0c10;color:#e8e3d4;padding:14vh 8vw;"><h1 style="font-weight:500;font-size:5rem;margin:0">No such state.</h1><p style="font-size:1.2rem;opacity:0.7"><a href="/states" style="color:#e8c275">← back to the index</a></p></body>`);
+    return;
+  }
+
+  sendProtected(req, res, {
+    description: `${state.name} — ${state.tagline}`,
+    attribution: state.attribution,
+    accepts: state.accepts,
+    body: () => renderStateBody(state),
+    htmlPaywall: () => renderPaywall(state, req),
+  });
+});
+
 app.get("/api/articles", (_req: Request, res: Response) => {
   res.json({
     articles: [
@@ -427,6 +498,9 @@ app.listen(PORT, () => {
   console.log(`🌐 x402 demo web server on http://localhost:${PORT}`);
   console.log("");
   console.log("Endpoints:");
+  console.log("  GET /                - redirects to /states");
+  console.log("  GET /states          - Six States index");
+  console.log("  GET /states/:slug    - state page (paywalled per state)");
   console.log("  GET /article/free    - free, attribution only");
   console.log("  GET /article/premium - 402 (USDC Base Sepolia)");
   console.log("  GET /article/crypto  - 402 (BTC mainnet)");
