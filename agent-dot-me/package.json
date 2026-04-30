@@ -1,0 +1,27 @@
+{
+  "name": "agent-dot-me",
+  "version": "0.1.0",
+  "private": true,
+  "description": "agent.me — a working prototype of the paradigm: me-agents negotiating in an ephemeral enclave via progressive-disclosure cards, with goose-run sessions wired over an ACP-style bridge.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server/index.ts",
+    "start": "tsx src/server/index.ts",
+    "build": "tsc -p .",
+    "demo:shopping": "tsx src/cli/run-scenario.ts shopping",
+    "demo:travel": "tsx src/cli/run-scenario.ts travel",
+    "demo:semi": "tsx src/cli/run-scenario.ts semi",
+    "demo:all": "tsx src/cli/run-all.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}
