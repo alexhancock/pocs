@@ -1,0 +1,27 @@
+[package]
+name = "acp-http-smoke-test"
+version = "0.0.1"
+edition = "2024"
+publish = false
+
+# Stand-alone project: NOT a member of the SDK workspace. We depend on the SDK
+# crates by path so we always exercise the local source.
+[workspace]
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
+
+[dependencies]
+agent-client-protocol = { path = "../../acp/rust-sdk/src/agent-client-protocol" }
+agent-client-protocol-http = { path = "../../acp/rust-sdk/src/agent-client-protocol-http" }
+
+tokio = { version = "1.52", features = ["full"] }
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
