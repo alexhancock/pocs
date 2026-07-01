@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>remote · the universal remote for ai</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!--
+      The whole app is this one file. The ACP SDK is pulled straight from a CDN
+      as native ESM via the import map below — no bundler, no node server, no
+      build step. Open this file from any static host and point it at a remote
+      `goose serve`.
+    -->
+    <!--
+      zod is pinned to 3.25.x: the SDK is built against zod's 3.25 compat layer
+      (it imports both `zod/v3` and `zod/v4` subpaths), and esm.sh's default
+      range resolution pulls a zod 4.x that breaks at load. Pinning fixes it.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@agentclientprotocol/sdk": "https://esm.sh/@agentclientprotocol/sdk@1.1.0?deps=zod@3.25.76&target=es2022",
+          "@agentclientprotocol/sdk/experimental/ws-client": "https://esm.sh/@agentclientprotocol/sdk@1.1.0/experimental/ws-client?deps=zod@3.25.76&target=es2022",
+          "marked": "https://esm.sh/marked@14.1.3?target=es2022",
+          "dompurify": "https://esm.sh/dompurify@3.1.7?target=es2022"
+        }
+      }
+    </script>
+
+    <style>
+      :root {
+        --ink: #111111;
+        --red: #e5322d;
+        --paper: #ffffff;
+        --faint: #e7e7e4;
+        --mute: #8a8a85;
+        --serif: "Newsreader", Georgia, serif;
+        --sans: "IBM Plex Sans", system-ui, sans-serif;
+        --mono: "IBM Plex Mono", ui-monospace, monospace;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: var(--paper); }
+      ::selection { background: var(--red); color: var(--paper); }
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 8px; }
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+      body {
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: var(--sans);
+        display: flex;
+        justify-content: center;
+      }
+
+      .frame {
+        width: min(720px, 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 48px 40px 28px;
+      }
+
+      /* Masthead -------------------------------------------------------- */
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+      }
+      .brand { display: flex; align-items: center; gap: 18px; }
+      h1 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 28px;
+        line-height: 1.05;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .kicker {
+        margin: 6px 0 0;
+        font-size: 12.5px;
+        color: var(--mute);
+        letter-spacing: 0.02em;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 12px;
+        border: 1px solid var(--faint);
+        padding: 6px 11px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 8px; background: var(--mute); }
+
+      .rule { height: 1px; background: var(--ink); margin: 26px 0 22px; }
+
+      /* Endpoint bar ---------------------------------------------------- */
+      .endpoint {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .endpoint label {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--mute);
+      }
+      .endpoint input {
+        flex: 1;
+        min-width: 220px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--ink);
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--ink);
+        padding: 6px 2px;
+        outline: none;
+      }
+      .endpoint input::placeholder { color: var(--mute); }
+      .connect-btn {
+        background: var(--ink);
+        color: var(--paper);
+        border: none;
+        border-radius: 10px;
+        padding: 9px 20px;
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+      }
+      .connect-btn:disabled { opacity: 0.4; cursor: default; }
+
+      /* Transcript ------------------------------------------------------ */
+      main {
+        flex: 1;
+        margin-top: 26px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+        padding-right: 4px;
+      }
+      .empty { max-width: 460px; margin-top: 8px; }
+      .empty h2 {
+        font-family: var(--serif);
+        font-size: 22px;
+        font-weight: 500;
+        margin: 0;
+      }
+      .empty p {
+        font-size: 14.5px;
+        line-height: 1.55;
+        color: var(--mute);
+        margin: 10px 0 0;
+      }
+      .empty em { color: var(--red); font-style: normal; }
+      .system {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--mute);
+      }
+
+      .turn { display: flex; gap: 14px; align-items: baseline; }
+      .tag {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--mute);
+        width: 44px;
+        flex-shrink: 0;
+        padding-top: 3px;
+      }
+      .tag.agent { color: var(--red); }
+      .turn .body { flex: 1; }
+      .user-text {
+        margin: 0;
+        font-size: 16px;
+        font-family: var(--serif);
+        line-height: 1.5;
+      }
+      .agent-text {
+        margin: 0;
+        font-size: 15.5px;
+        line-height: 1.62;
+      }
+      /* Markdown emitted by the agent — tuned to the paper/serif design. */
+      .agent-text > *:first-child { margin-top: 0; }
+      .agent-text > *:last-child { margin-bottom: 0; }
+      .agent-text p { margin: 0 0 0.7em; }
+      .agent-text h1,
+      .agent-text h2,
+      .agent-text h3,
+      .agent-text h4,
+      .agent-text h5,
+      .agent-text h6 {
+        font-family: var(--serif);
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        margin: 1em 0 0.4em;
+      }
+      .agent-text h1 { font-size: 1.5em; }
+      .agent-text h2 { font-size: 1.3em; }
+      .agent-text h3 { font-size: 1.12em; }
+      .agent-text h4,
+      .agent-text h5,
+      .agent-text h6 { font-size: 1em; }
+      .agent-text ul,
+      .agent-text ol { margin: 0 0 0.7em; padding-left: 1.4em; }
+      .agent-text li { margin: 0.15em 0; }
+      .agent-text li > ul,
+      .agent-text li > ol { margin: 0.15em 0; }
+      .agent-text a {
+        color: var(--red);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .agent-text code {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        background: var(--faint);
+        padding: 1px 5px;
+        border-radius: 5px;
+      }
+      .agent-text pre {
+        background: var(--faint);
+        border-radius: 8px;
+        padding: 12px 14px;
+        overflow-x: auto;
+        margin: 0 0 0.7em;
+      }
+      .agent-text pre code {
+        background: none;
+        padding: 0;
+        font-size: 12.5px;
+        line-height: 1.5;
+      }
+      .agent-text blockquote {
+        margin: 0 0 0.7em;
+        padding-left: 12px;
+        border-left: 2px solid var(--faint);
+        color: var(--mute);
+        font-style: italic;
+      }
+      .agent-text hr {
+        border: none;
+        border-top: 1px solid var(--faint);
+        margin: 1em 0;
+      }
+      .agent-text table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0 0 0.7em;
+        font-size: 0.92em;
+      }
+      .agent-text th,
+      .agent-text td {
+        border: 1px solid var(--faint);
+        padding: 6px 10px;
+        text-align: left;
+      }
+      .agent-text th {
+        font-family: var(--mono);
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--mute);
+        font-weight: 500;
+      }
+      .agent-text img { max-width: 100%; height: auto; }
+      .thought {
+        margin: 0 0 8px;
+        font-size: 13px;
+        font-style: italic;
+        color: var(--mute);
+        line-height: 1.5;
+        border-left: 2px solid var(--faint);
+        padding-left: 12px;
+        white-space: pre-wrap;
+      }
+      .tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 10px;
+      }
+      .tool {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        border: 1px solid var(--faint);
+        border-radius: 7px;
+        padding: 4px 9px;
+      }
+      .tool .tdot { width: 6px; height: 6px; border-radius: 6px; background: var(--mute); }
+      .tool .tdot.completed { background: var(--ink); }
+      .tool .tdot.failed { background: var(--red); }
+      .caret { color: var(--red); margin-left: 1px; }
+
+      /* Composer -------------------------------------------------------- */
+      footer {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        border-top: 1px solid var(--ink);
+        padding-top: 18px;
+        margin-top: 20px;
+      }
+      textarea {
+        flex: 1;
+        resize: none;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 16px;
+        font-family: var(--serif);
+        line-height: 1.5;
+        color: var(--ink);
+        max-height: 160px;
+      }
+      textarea::placeholder { color: var(--mute); font-style: italic; }
+      .send-btn {
+        background: var(--ink);
+        color: var(--paper);
+        border: none;
+        border-radius: 10px;
+        padding: 10px 22px;
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+      }
+      .send-btn:disabled { opacity: 0.4; cursor: default; }
+
+      .note {
+        margin-top: 12px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--red);
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="frame">
+      <!-- Masthead -->
+      <header>
+        <div class="brand">
+          <!-- the line mark — a remote emitting a signal; arcs go red when live -->
+          <svg id="mark" width="44" height="44" viewBox="0 0 600 600" aria-hidden="true">
+            <g transform="translate(250 300)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+              <rect x="-150" y="-95" width="180" height="190" rx="24" stroke="#111111" />
+              <circle cx="-60" cy="0" r="22" stroke="#111111" />
+              <line x1="-60" y1="-48" x2="-60" y2="-30" stroke="#111111" />
+              <line x1="-60" y1="30" x2="-60" y2="48" stroke="#111111" />
+              <line x1="-108" y1="0" x2="-90" y2="0" stroke="#111111" />
+              <line x1="-30" y1="0" x2="-12" y2="0" stroke="#111111" />
+              <line x1="30" y1="0" x2="58" y2="0" stroke="#111111" />
+              <path class="arc" d="M92 -52 A78 78 0 0 1 92 52" stroke="#e7e7e4" style="transition: stroke .4s" />
+              <path class="arc" d="M126 -86 A126 126 0 0 1 126 86" stroke="#e7e7e4" style="transition: stroke .4s .05s" />
+              <path class="arc" d="M160 -120 A174 174 0 0 1 160 120" stroke="#e7e7e4" style="transition: stroke .4s .1s" />
+            </g>
+          </svg>
+          <div>
+            <h1>the universal remote for ai</h1>
+            <p class="kicker">agent client protocol · direct to a remote goose</p>
+          </div>
+        </div>
+        <div class="pill">
+          <span class="dot" id="status-dot"></span>
+          <span id="status-text">idle</span>
+        </div>
+      </header>
+
+      <div class="rule"></div>
+
+      <!-- Endpoint -->
+      <div class="endpoint">
+        <label for="url">remote</label>
+        <input id="url" type="text" spellcheck="false" placeholder="ws://your-host:3284/acp" />
+        <button class="connect-btn" id="connect">connect</button>
+      </div>
+
+      <!-- Transcript -->
+      <main id="transcript">
+        <div class="empty" id="empty">
+          <h2>connect to a remote <em>goose</em></h2>
+          <p>
+            This page speaks the Agent Client Protocol straight to a remote
+            <code>goose serve</code> over a WebSocket — no local bridge, no
+            backend. Point it at your host above and start a session.
+          </p>
+        </div>
+      </main>
+
+      <!-- Composer -->
+      <footer>
+        <textarea id="draft" rows="1" placeholder="connect to the agent first…" disabled></textarea>
+        <button class="send-btn" id="send" disabled>send</button>
+      </footer>
+
+      <div class="note" id="note" style="display: none"></div>
+    </div>
+
+    <script type="module">
+      import * as acp from "@agentclientprotocol/sdk";
+      import { createWebSocketStream } from "@agentclientprotocol/sdk/experimental/ws-client";
+      import { marked } from "marked";
+      import DOMPurify from "dompurify";
+
+      // Markdown for agent output. GitHub-ish line breaks; sanitized before it
+      // ever touches the DOM so nothing the agent emits can inject script/HTML.
+      marked.setOptions({ gfm: true, breaks: true });
+      function renderMarkdown(src) {
+        return DOMPurify.sanitize(marked.parse(src ?? "", { async: false }));
+      }
+
+      // -- tokens --------------------------------------------------------
+      const INK = "#111111";
+      const RED = "#e5322d";
+      const FAINT = "#e7e7e4";
+      const MUTE = "#8a8a85";
+
+      // -- the cwd the agent runs in, on the *remote* host ---------------
+      // The agent runs wherever `goose serve` is running, so this is a working
+      // directory on *that* machine. ACP's session/new requires an ABSOLUTE
+      // path — goose rejects anything else (a relative "." or even "~", which
+      // it does NOT expand) with "cwd must be an absolute path". Since the page
+      // can't know the remote's filesystem, this is configurable via ?cwd= or
+      // localStorage, defaulting to "/" (always valid; point it at a real
+      // project dir on the remote for useful work).
+      const params = new URLSearchParams(location.search);
+      const CWD_KEY = "acp-static-client.cwd";
+      const REMOTE_CWD =
+        params.get("cwd") || localStorage.getItem(CWD_KEY) || "/";
+
+      // -- browser-safe WebSocket ----------------------------------------
+      // The SDK's createWebSocketStream is written for both Node's `ws` and
+      // the browser. Internally it always constructs the socket as
+      //   new WebSocket(url, protocols, { headers })
+      // The third argument is a `ws`-library extension for setting request
+      // headers (e.g. Cookie). The browser WebSocket constructor only accepts
+      // (url, protocols) — handed a third argument it fails the connection
+      // outright (readyState → CLOSED, an "error" event, no handshake). That
+      // surfaces here as "WebSocket could not open" even though the endpoint
+      // is perfectly reachable.
+      //
+      // This wrapper drops the extra argument so the native constructor is
+      // called correctly. Paired with `cookies: "omit"` below (browsers
+      // forbid setting a Cookie header on a WebSocket anyway, and manage
+      // cookies themselves), the SDK stream connects cleanly.
+      class BrowserWebSocket extends WebSocket {
+        constructor(url, protocols) {
+          super(url, protocols);
+        }
+      }
+
+      // -- elements ------------------------------------------------------
+      const $ = (id) => document.getElementById(id);
+      const els = {
+        url: $("url"),
+        connect: $("connect"),
+        transcript: $("transcript"),
+        empty: $("empty"),
+        draft: $("draft"),
+        send: $("send"),
+        note: $("note"),
+        statusDot: $("status-dot"),
+        statusText: $("status-text"),
+        arcs: Array.from(document.querySelectorAll(".arc")),
+      };
+
+      // -- remote URL: query param > localStorage > sensible default -----
+      const STORE_KEY = "acp-static-client.url";
+      els.url.value =
+        params.get("url") ||
+        localStorage.getItem(STORE_KEY) ||
+        "ws://127.0.0.1:3284/acp";
+
+      // -- state ---------------------------------------------------------
+      let live = null; // { connection, session }
+      let status = "idle";
+
+      function setStatus(next, label) {
+        status = next;
+        const map = {
+          idle: { text: "idle", color: MUTE },
+          connecting: { text: "connecting", color: MUTE },
+          ready: { text: label || "connected", color: INK },
+          thinking: { text: "thinking", color: RED },
+          error: { text: "error", color: RED },
+        };
+        const s = map[next];
+        els.statusText.textContent = s.text;
+        els.statusText.style.color = s.color;
+        els.statusDot.style.background = s.color;
+        els.statusDot.style.animation =
+          next === "thinking" ? "pulse 1s ease-in-out infinite" : "none";
+
+        const liveNow = next === "ready" || next === "thinking";
+        els.arcs.forEach((a) => (a.style.stroke = liveNow ? RED : FAINT));
+
+        const composerReady = liveNow;
+        els.draft.disabled = !composerReady;
+        els.draft.placeholder = composerReady
+          ? "send a message to goose…"
+          : "connect to the agent first…";
+        refreshSendBtn();
+      }
+
+      function refreshSendBtn() {
+        els.send.disabled =
+          status !== "ready" || els.draft.value.trim().length === 0;
+      }
+
+      // A failed WebSocket handshake rejects with a DOM Event, not an Error,
+      // which stringifies to a useless "[object Event]". Normalise to a string.
+      function describeError(err) {
+        if (err && typeof err.message === "string" && err.message) return err.message;
+        if (err instanceof Event) return "connection failed (WebSocket could not open)";
+        if (typeof err === "string") return err;
+        try { return JSON.stringify(err); } catch { return String(err); }
+      }
+
+      function note(msg) {
+        if (!msg) {
+          els.note.style.display = "none";
+          els.note.textContent = "";
+          return;
+        }
+        els.note.style.display = "block";
+        els.note.textContent = msg;
+      }
+
+      // -- typewriter: smooths bursty token arrival ----------------------
+      function createTypewriter(onText) {
+        let target = "";
+        let shown = 0;
+        let raf = 0;
+        let finalized = false;
+        let resolveDone = null;
+
+        const tick = () => {
+          const gap = target.length - shown;
+          if (gap > 0) {
+            shown = Math.min(target.length, shown + Math.max(2, Math.ceil(gap * 0.2)));
+            onText(target.slice(0, shown));
+          }
+          if (finalized && shown >= target.length) {
+            raf = 0;
+            resolveDone && resolveDone();
+            resolveDone = null;
+            return;
+          }
+          raf = requestAnimationFrame(tick);
+        };
+
+        return {
+          push(text) {
+            target += text;
+            if (!raf) raf = requestAnimationFrame(tick);
+          },
+          finish() {
+            finalized = true;
+            if (!raf && shown >= target.length) return Promise.resolve();
+            return new Promise((res) => (resolveDone = res));
+          },
+          cancel() {
+            if (raf) cancelAnimationFrame(raf);
+            raf = 0;
+            resolveDone && resolveDone();
+          },
+        };
+      }
+
+      // -- transcript rendering ------------------------------------------
+      function clearTranscript() {
+        els.transcript.innerHTML = "";
+      }
+
+      function addSystemLine(text) {
+        const p = document.createElement("p");
+        p.className = "system";
+        p.textContent = text;
+        els.transcript.appendChild(p);
+        return p;
+      }
+
+      function addUserTurn(text) {
+        const row = document.createElement("div");
+        row.className = "turn";
+        row.innerHTML =
+          '<span class="tag">you</span><div class="body"><p class="user-text"></p></div>';
+        row.querySelector(".user-text").textContent = text;
+        els.transcript.appendChild(row);
+        pinToBottom();
+      }
+
+      // Returns a small controller for streaming agent output into the row.
+      function addAgentTurn() {
+        const row = document.createElement("div");
+        row.className = "turn";
+        row.innerHTML =
+          '<span class="tag agent">goose</span>' +
+          '<div class="body">' +
+          '<p class="thought" style="display:none"></p>' +
+          '<div class="tools" style="display:none"></div>' +
+          '<div class="agent-text"></div>' +
+          "</div>";
+        els.transcript.appendChild(row);
+
+        const thoughtEl = row.querySelector(".thought");
+        const toolsEl = row.querySelector(".tools");
+        const textEl = row.querySelector(".agent-text");
+        const caret = document.createElement("span");
+        caret.className = "caret";
+        caret.textContent = "▍";
+        textEl.appendChild(caret);
+
+        const toolNodes = new Map();
+        let thought = "";
+        let textShown = "";
+
+        const renderText = () => {
+          textEl.innerHTML = renderMarkdown(textShown);
+          // Tuck the caret into the last block so it trails the text inline
+          // rather than dropping onto its own line after a block element.
+          const last = textEl.lastElementChild;
+          (last || textEl).appendChild(caret);
+          pinToBottom();
+        };
+
+        return {
+          setText(shown) {
+            textShown = shown;
+            renderText();
+          },
+          addThought(chunk) {
+            thought += chunk;
+            thoughtEl.style.display = "block";
+            thoughtEl.textContent = thought;
+            pinToBottom();
+          },
+          addTool(id, title, status) {
+            toolsEl.style.display = "flex";
+            const span = document.createElement("span");
+            span.className = "tool";
+            span.innerHTML = '<span class="tdot"></span><span class="ttitle"></span>';
+            span.querySelector(".ttitle").textContent = title;
+            const dot = span.querySelector(".tdot");
+            if (status) dot.classList.add(status);
+            toolsEl.appendChild(span);
+            toolNodes.set(id, dot);
+            pinToBottom();
+          },
+          updateTool(id, status) {
+            const dot = toolNodes.get(id);
+            if (dot && status) {
+              dot.className = "tdot " + status;
+            }
+          },
+          done() {
+            caret.remove();
+          },
+        };
+      }
+
+      function pinToBottom() {
+        const el = els.transcript;
+        const nearBottom =
+          el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+        if (nearBottom) el.scrollTop = el.scrollHeight;
+      }
+
+      // -- open a session against the remote goose serve -----------------
+      async function openSession(wsUrl) {
+        const stream = createWebSocketStream(wsUrl, {
+          // use the native browser constructor (see BrowserWebSocket above),
+          // and don't try to attach a Cookie header the browser won't allow.
+          WebSocket: BrowserWebSocket,
+          cookies: "omit",
+        });
+
+        const app = acp
+          .client({ name: "acp-static-client" })
+          .onRequest(acp.methods.client.session.requestPermission, async (ctx) => {
+            // auto-approve for a frictionless demo
+            note("auto-approved: " + (ctx.params.toolCall?.title ?? "permission"));
+            const opt =
+              ctx.params.options.find((o) => o.kind === "allow_always") ??
+              ctx.params.options.find((o) => o.kind === "allow_once") ??
+              ctx.params.options[0];
+            return {
+              outcome: { outcome: "selected", optionId: opt?.optionId ?? "allow" },
+            };
+          });
+
+        const connection = app.connect(stream);
+        const agent = connection.agent;
+
+        const init = await agent.request(acp.methods.agent.initialize, {
+          protocolVersion: acp.PROTOCOL_VERSION,
+          clientCapabilities: {},
+        });
+
+        const session = await agent.buildSession(REMOTE_CWD).start();
+
+        const name = init.agentInfo?.name ?? "agent";
+        const version = init.agentInfo?.version ?? "";
+        return {
+          connection,
+          session,
+          label: name + (version ? " " + version : ""),
+          close: () => connection.close(),
+        };
+      }
+
+      async function connect() {
+        const wsUrl = els.url.value.trim();
+        if (!wsUrl) return;
+        localStorage.setItem(STORE_KEY, wsUrl);
+        localStorage.setItem(CWD_KEY, REMOTE_CWD);
+
+        note(null);
+        clearTranscript();
+        setStatus("connecting");
+        const sys = addSystemLine("· establishing session with " + wsUrl + " …");
+
+        if (live) {
+          try { live.close(); } catch {}
+          live = null;
+        }
+
+        try {
+          live = await openSession(wsUrl);
+          sys.remove();
+          setStatus("ready", live.label);
+
+          // surface an unexpected drop
+          live.connection.closed
+            .then(() => { if (status !== "idle") setStatus("idle"); })
+            .catch((err) => {
+              note("connection closed: " + describeError(err));
+              setStatus("error");
+            });
+        } catch (err) {
+          console.error(err);
+          sys.remove();
+          note(
+            describeError(err) +
+              "\n— is `goose serve` reachable at that URL? (check host/port, auth, CORS)",
+          );
+          setStatus("error");
+        }
+      }
+
+      async function send() {
+        const text = els.draft.value.trim();
+        if (!live || !text || status !== "ready") return;
+
+        els.draft.value = "";
+        refreshSendBtn();
+        addUserTurn(text);
+        const view = addAgentTurn();
+        setStatus("thinking", live.label);
+
+        const typer = createTypewriter((shown) => view.setText(shown));
+
+        try {
+          // Fire the prompt but don't await it — prompt() only resolves when the
+          // whole turn is done. Drain nextUpdate() concurrently so chunks render
+          // as they arrive.
+          const done = live.session.prompt(text);
+          done.catch(() => {});
+
+          for (;;) {
+            const msg = await live.session.nextUpdate();
+            if (msg.kind === "stop") {
+              await typer.finish();
+              view.done();
+              break;
+            }
+            const u = msg.update;
+            switch (u.sessionUpdate) {
+              case "agent_message_chunk":
+                if (u.content?.type === "text") typer.push(u.content.text);
+                break;
+              case "agent_thought_chunk":
+                if (u.content?.type === "text") view.addThought(u.content.text);
+                break;
+              case "tool_call":
+                view.addTool(u.toolCallId, u.title ?? u.toolCallId, u.status ?? "pending");
+                break;
+              case "tool_call_update":
+                view.updateTool(u.toolCallId, u.status);
+                break;
+              default:
+                break;
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          typer.cancel();
+          view.setText("· error: " + describeError(err));
+          view.done();
+          note(describeError(err));
+        } finally {
+          if (status !== "error" && status !== "idle") setStatus("ready", live?.label);
+        }
+      }
+
+      // -- wiring --------------------------------------------------------
+      els.connect.addEventListener("click", connect);
+      els.url.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); connect(); }
+      });
+      els.send.addEventListener("click", send);
+      els.draft.addEventListener("input", () => {
+        refreshSendBtn();
+        // auto-grow
+        els.draft.style.height = "auto";
+        els.draft.style.height = Math.min(160, els.draft.scrollHeight) + "px";
+      });
+      els.draft.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+      });
+
+      setStatus("idle");
+    </script>
+  </body>
+</html>
