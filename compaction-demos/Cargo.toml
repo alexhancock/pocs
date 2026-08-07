@@ -1,0 +1,18 @@
+[package]
+name = "compaction-demos"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "basic"
+path = "rust/basic.rs"
+
+[[bin]]
+name = "traits"
+path = "rust/traits.rs"
+
+[dependencies]
+goose-compaction = { path = "/Users/alexhancock/Development/goose/crates/goose-compaction" }
+goose-providers = { path = "/Users/alexhancock/Development/goose/crates/goose-providers", features = ["rustls-tls"] }
+anyhow = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
