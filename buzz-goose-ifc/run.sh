@@ -38,7 +38,12 @@ log() { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
 # branches only when the working tree is clean.
 ensure_checkout() {
   local dir="$1" repo="$2" remote="$3"
-  if [[ ! -d "$dir/.git" ]]; then
+  # `.git` is a file (not a dir) in worktrees, so ask git rather than test -d.
+  if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if [[ -e "$dir" ]]; then
+      echo "error: $dir exists but is not a git checkout" >&2
+      exit 1
+    fi
     log "cloning $repo ($BRANCH) into $dir"
     git clone --branch "$BRANCH" "$repo" "$dir"
     return

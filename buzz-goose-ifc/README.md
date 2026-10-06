@@ -26,3 +26,26 @@ You need what `just dev` in buzz needs: Docker for Postgres, Redis, and MinIO, p
 5. Runs `just dev` in buzz, which starts the relay and the Tauri app.
 
 To check that it's working, create or start a local agent in the app that uses the **goose** runtime. Then confirm that confidential reads come back as placeholders and that public writes carrying confidential data get blocked.
+
+## Demo setup
+
+1. Register the demo MCP server with goose by adding this to `~/.config/goose/config.yaml` under `extensions:`:
+   ```yaml
+   ifcdemo:
+     enabled: true
+     type: stdio
+     name: ifcdemo
+     description: Fake data for the IFC demo
+     cmd: python3
+     args: [/Users/alexhancock/Development/pocs/buzz-goose-ifc/ifcdemo_mcp.py]
+     envs: {}
+     env_keys: []
+     timeout: 300
+     bundled: false
+   ```
+2. In Buzz, create a goose agent and set the env var `GOOSE_MODE=approve`. Buzz defaults goose to `auto`, which never sends permission requests, so IFC never sees the calls. Don't use `smart_approve` either, because it skips read-only tools like `read_secret`.
+3. Watch these two places:
+   - `tail -f ifcdemo-actions.log` shows what actually happened.
+   - The agent log shows the decisions: `grep -rh "ifc " ~/Library/Application\ Support/xyz.block.buzz*/ 2>/dev/null`. You can also open the agent's log from the app.
+
+Taint and refs are per session, so use a fresh channel or thread for each scenario.
